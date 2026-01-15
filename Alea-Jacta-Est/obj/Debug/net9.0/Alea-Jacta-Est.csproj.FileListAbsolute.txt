@@ -33,3 +33,5 @@ G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\obj\Debug\net9.0\Alea-Jacta-Est.pdb
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\obj\Debug\net9.0\Alea-Jacta-Est.genruntimeconfig.cache
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\obj\Debug\net9.0\ref\Alea-Jacta-Est.dll
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\card_verso.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\card_recto_placeholder.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\main_background.xnb

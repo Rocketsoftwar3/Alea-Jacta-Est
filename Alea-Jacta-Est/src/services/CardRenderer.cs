@@ -1,4 +1,3 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Alea_Jacta_Est.Entities;
 
@@ -6,7 +5,7 @@ namespace Alea_Jacta_Est.Services;
 
 public class CardRenderer
 {
-    private SpriteBatch _spriteBatch;
+    private readonly SpriteBatch _spriteBatch;
 
     public CardRenderer(SpriteBatch spriteBatch)
     {
@@ -16,7 +15,7 @@ public class CardRenderer
     public void Draw(Card card)
     {
         _spriteBatch.Draw(
-            card.Texture,
+            card.CurrentTexture,
             card.Position,
             null,
             card.Tint,
@@ -26,13 +25,5 @@ public class CardRenderer
             SpriteEffects.None,
             0f
         );
-    }
-
-    public void DrawMultiple(params Card[] cards)
-    {
-        foreach (var card in cards)
-        {
-            Draw(card);
-        }
     }
 }

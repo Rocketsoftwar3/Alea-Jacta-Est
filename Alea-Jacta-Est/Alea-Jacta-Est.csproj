@@ -27,13 +27,8 @@
         <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*"/>
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="res\audio\" />
-      <Folder Include="res\fonts\" />
-      <Folder Include="res\icons\" />
-      <Folder Include="res\video\" />
       <Folder Include="src\main\" />
       <Folder Include="src\entities\" />
       <Folder Include="src\services\" />
-      <Folder Include="src\utils\" />
     </ItemGroup>
 </Project>

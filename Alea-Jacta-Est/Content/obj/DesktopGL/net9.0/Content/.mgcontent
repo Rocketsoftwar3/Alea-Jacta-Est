@@ -5,8 +5,12 @@
   <Config />
   <SourceFiles>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/card_verso.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/card_recto_placeholder.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/main_background.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
   </DestFiles>
 </SourceFileCollection>
