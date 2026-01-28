@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <SourceFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/main_background.png</SourceFile>
-  <SourceTime>2026-01-15T18:54:47.710446+01:00</SourceTime>
+  <SourceTime>2026-01-29T22:00:30.0361024+01:00</SourceTime>
   <DestFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/bin/DesktopGL/Content/main_background.xnb</DestFile>
-  <DestTime>2026-01-15T18:55:52.4381989+01:00</DestTime>
+  <DestTime>2026-01-29T22:01:03.1525744+01:00</DestTime>
   <Importer>TextureImporter</Importer>
   <ImporterTime>2025-10-20T16:25:32+02:00</ImporterTime>
   <Processor>TextureProcessor</Processor>
   <ProcessorTime>2025-10-20T16:25:32+02:00</ProcessorTime>
   <Parameters>
     <Key>ColorKeyColor</Key>
-    <Value>255,0,255,255</Value>
+    <Value>200,0,200,200</Value>
   </Parameters>
   <Parameters>
     <Key>ColorKeyEnabled</Key>

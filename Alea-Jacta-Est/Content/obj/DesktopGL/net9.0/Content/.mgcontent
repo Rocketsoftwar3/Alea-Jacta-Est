@@ -4,11 +4,27 @@
   <Platform>DesktopGL</Platform>
   <Config />
   <SourceFiles>
-    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/card_verso.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_amoureux.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_bateleur.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_chariot.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_dos.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_empereur.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_imperatrice.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_justice.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_pape.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_papesse.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/card_recto_placeholder.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/main_background.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
