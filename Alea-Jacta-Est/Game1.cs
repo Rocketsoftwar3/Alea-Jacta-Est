@@ -1,51 +1,96 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+using Alea_Jacta_Est.Main;
+using Alea_Jacta_Est.Services;
+using Alea_Jacta_Est.Config;
 
 namespace Alea_Jacta_Est;
 
+/// <summary>Main game class - orchestrates game loop and services.</summary>
 public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+    private GameContext _context;
+    private InputService _inputService;
+
+    private bool _isResizing = false;
 
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
+
+        _graphics.HardwareModeSwitch = false;
+        Window.AllowUserResizing = true;
+        Window.ClientSizeChanged += OnClientSizeChanged;
+
+        _graphics.PreferredBackBufferWidth = PositionConfig.ReferenceWidth;
+        _graphics.PreferredBackBufferHeight = PositionConfig.ReferenceHeight;
+        _graphics.ApplyChanges();
     }
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
+        // Initialize input service
+        _inputService = new InputService(_graphics, Window);
 
         base.Initialize();
     }
 
+    private void OnClientSizeChanged(object sender, System.EventArgs e)
+    {
+        if (_isResizing)
+            return;
+
+        _isResizing = true;
+
+        // Update backbuffer to match window size
+        _graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+        _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
+        _graphics.ApplyChanges();
+
+        // Update viewport for letterboxing calculation
+        if (_context != null)
+        {
+            _context.Viewport.Update(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
+        }
+
+        _isResizing = false;
+    }
+
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
+        var spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        // TODO: use this.Content to load your game content here
+        // Load textures
+        var backgroundTexture = Content.Load<Texture2D>("main_background");
+        var cardRectoTexture = Content.Load<Texture2D>("card_recto_placeholder");
+        var cardVersoTexture = Content.Load<Texture2D>("cards/tarot_dos");
+
+        // Initialize GameContext
+        _context = new GameContext("LocalPlayer");
+        _context.InitGraphics(spriteBatch, GraphicsDevice, Content, backgroundTexture, cardRectoTexture, cardVersoTexture);
+
+        // Initialize demo data
+        DemoDataService.InitializeDemoDecks(_context);
     }
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
-            Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
+        // Handle input
+        _inputService.Update();
 
-        // TODO: Add your update logic here
+        if (_inputService.IsExitRequested())
+            Exit();
 
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        // TODO: Add your drawing code here
+        // Render the game
+        _context.Render();
 
         base.Draw(gameTime);
     }

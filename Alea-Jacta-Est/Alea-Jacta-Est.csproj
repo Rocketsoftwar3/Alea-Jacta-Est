@@ -26,4 +26,11 @@
         <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*"/>
         <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*"/>
     </ItemGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.WindowsDesktop.App" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="src\main\" />
+      <Folder Include="src\services\" />
+    </ItemGroup>
 </Project>
