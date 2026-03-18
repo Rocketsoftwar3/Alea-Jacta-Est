@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using ImGuiNET;
+using Alea_Jacta_Est.Commands;
 using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
@@ -15,7 +16,7 @@ namespace Alea_Jacta_Est.Services;
 /// On hover: card is redrawn on top via BackgroundDrawList (appears above SpriteBatch layer)
 /// and a tooltip with card info is shown.
 /// </summary>
-public static class CardInteractionService
+public class CardInteractionService
 {
     private static readonly DeckType[] LocalDeckTypes =
     {
@@ -23,10 +24,19 @@ public static class CardInteractionService
         DeckType.BoardDeck0, DeckType.BoardDeck1, DeckType.BoardDeck2, DeckType.BoardDeck3
     };
 
-    private const float HoverScale  = 1.12f; // card grows when hovered
-    private const float HoverLiftPx = 12f;   // card lifts upward when hovered
+    private const float HoverScale  = 1.12f;
+    private const float HoverLiftPx = 12f;
 
-    public static void Render(GameContext ctx, ImGuiRenderer imGuiRenderer)
+    private readonly DeckRenderer _deckRenderer;
+    private readonly CommandQueue _commands;
+
+    public CardInteractionService(DeckRenderer deckRenderer, CommandQueue commands)
+    {
+        _deckRenderer = deckRenderer;
+        _commands = commands;
+    }
+
+    public void Render(GameState state, GraphicsResources gfx, ImGuiRenderer imGuiRenderer)
     {
         var io = ImGui.GetIO();
 
@@ -38,17 +48,17 @@ public static class CardInteractionService
 
         foreach (var deckType in LocalDeckTypes)
         {
-            var deck   = PositionConfig.GetDeck(ctx.LocalPlayer, deckType);
-            var config = PositionConfig.GetDeckConfig(ctx.LocalPlayer, deckType);
+            var deck   = PositionConfig.GetDeck(state.LocalPlayer, deckType);
+            var config = PositionConfig.GetDeckConfig(state.LocalPlayer, deckType);
 
             foreach (var card in deck.Cards)
                 card.IsHovered = false;
 
-            var positions = DeckRenderer.GetCardPositions(
+            var positions = _deckRenderer.GetCardPositions(
                 deck,
-                ctx.Viewport.RelativeToScreen(config.RelativePosition),
+                gfx.Viewport.RelativeToScreen(config.RelativePosition),
                 config.DisplayMode,
-                ctx.Viewport.Scale,
+                gfx.Viewport.Scale,
                 config.BaseCardScale,
                 config.FanSpreadDegrees,
                 config.FanRadius,
@@ -74,16 +84,13 @@ public static class CardInteractionService
 
                     float wH = w * HoverScale;
                     float hH = h * HoverScale;
-                    // Lift the card along the screen-up axis (Y-axis before rotation)
                     float liftX = -(float)Math.Sin(info.Rotation) * HoverLiftPx;
                     float liftY = -(float)Math.Cos(info.Rotation) * HoverLiftPx;
                     var liftedCenter = new Vector2(center.X + liftX, center.Y + liftY);
 
-                    // Use the full display rotation (includes IsUpright 180° flip)
                     float displayRotation = info.Rotation + (info.Card.IsUpright ? 0f : Microsoft.Xna.Framework.MathHelper.Pi);
                     var (tl, tr, br, bl) = RotatedCorners(liftedCenter, wH, hH, displayRotation);
 
-                    // UV order matches corner order: TL(0,0) TR(1,0) BR(1,1) BL(0,1)
                     drawList.AddImageQuad(texId,
                         tl, tr, br, bl,
                         new Vector2(0, 0), new Vector2(1, 0),
@@ -99,10 +106,10 @@ public static class CardInteractionService
                         ImGui.TextUnformatted($"Prix        : {info.Card.Price}");
                     ImGui.EndTooltip();
 
-                    // ── Click ────────────────────────────────────────────────────
+                    // ── Click → emit command ────────────────────────────────────
                     if (leftClicked)
                     {
-                        info.Card.IsFlipped = !info.Card.IsFlipped;
+                        _commands.Enqueue(new FlipCardCommand(info.Card));
                         leftClicked = false;
                     }
                 }
@@ -114,14 +121,12 @@ public static class CardInteractionService
 
     private static string FormatTextureName(string texturePath)
     {
-        // "cards/tarot_bateleur" → "tarot bateleur"
         string file = System.IO.Path.GetFileNameWithoutExtension(texturePath ?? "");
         return file.Replace("_", " ");
     }
 
     private static Vector2 ToNumerics(XnaVector2 v) => new(v.X, v.Y);
 
-    /// <summary>True if <paramref name="mouse"/> is inside the card's rotated rectangle.</summary>
     private static bool IsMouseInRotatedRect(Vector2 mouse, Vector2 center, float w, float h, float rotation)
     {
         float dx = mouse.X - center.X;
@@ -135,7 +140,6 @@ public static class CardInteractionService
         return Math.Abs(localX) <= w * 0.5f && Math.Abs(localY) <= h * 0.5f;
     }
 
-    /// <summary>Returns the 4 screen-space corners of a rotated rectangle (TL, TR, BR, BL).</summary>
     private static (Vector2, Vector2, Vector2, Vector2) RotatedCorners(Vector2 center, float w, float h, float rotation)
     {
         float cos = (float)Math.Cos(rotation);

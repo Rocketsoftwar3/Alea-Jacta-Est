@@ -1,4 +1,3 @@
-using System;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 
@@ -11,64 +10,51 @@ namespace Alea_Jacta_Est.Effects;
 /// </summary>
 public class PapesseEffect : ICardEffect
 {
-    public void Resolve(GameContext context, Card card)
-    {
-        Action<GameContext, Card> resolver = card.IsUpright switch
-        {
-            true => ResolveEndroit,
-            false => ResolveEnvers
-        };
-        resolver(context, card);
-    }
+    public int Duration => 3;
 
-    /// <summary>
-    /// Endroit : Pendant 3 tours, les cartes en main vont dans une pile à part (pas défausse),
-    /// +5 pièces/tour. Au 4ème tour, cartes de la pile à part retournent en main.
-    /// </summary>
-    private void ResolveEndroit(GameContext context, Card card)
+    public void OnPlay(GameState state, Card card)
     {
-        var currentPlayer = context.CurrentPlayer;
+        var currentPlayer = state.CurrentPlayer;
         if (currentPlayer == null) return;
 
-        // Créer la pile à part si elle n'existe pas
-        const string tempDeckName = "Papesse_Temporary";
-        if (!currentPlayer.Decks.ContainsKey(tempDeckName))
+        if (card.IsUpright)
         {
-            currentPlayer.Decks[tempDeckName] = new Deck();
+            // Create temporary deck for Papesse Endroit effect
+            const string tempDeckName = "Papesse_Temporary";
+            if (!currentPlayer.Decks.ContainsKey(tempDeckName))
+            {
+                currentPlayer.Decks[tempDeckName] = new Deck();
+            }
         }
-
-        // Enregistrer l'effet pour 3 tours
-        // TODO: Implémenter système d'effets persistants
-        // - À chaque fin de tour pendant 3 tours :
-        //   * Cartes en main -> pile à part au lieu de défausse
-        //   * +5 pièces
-        // - Au 4ème tour :
-        //   * Cartes de pile à part -> MainDeck
-        //   * Nettoyer la pile temporaire
-
-        // Pour l'instant, juste marquer le début de l'effet
-        int activationTurn = context.CurrentTurn;
-
-        // Stocker les métadonnées de l'effet (on pourrait utiliser un système plus robuste)
-        // currentPlayer.ActiveEffects["Papesse_Endroit"] = new EffectMetadata
-        // {
-        //     ActivationTurn = activationTurn,
-        //     Duration = 3
-        // };
     }
 
-    /// <summary>
-    /// Envers : Tour suivant, tous les adversaires voient leurs cartes
-    /// uniquement par leur valeur monétaire.
-    /// </summary>
-    private void ResolveEnvers(GameContext context, Card card)
+    public void OnTurnStart(GameState state, Card card)
     {
-        // Activer le flag pour masquer les cartes adverses
-        // TODO: Ajouter un flag dans GameContext pour gérer l'affichage
-        // context.OpponentsSeePriceOnly = true;
-        // context.OpponentsSeePriceOnlyUntilTurn = context.CurrentTurn + 1;
+        var currentPlayer = state.CurrentPlayer;
+        if (currentPlayer == null) return;
 
-        // Ce flag devra être vérifié dans le renderer pour afficher
-        // uniquement le prix au lieu de la texture des cartes
+        if (card.IsUpright)
+        {
+            // +5 pièces par tour
+            currentPlayer.Wallet += 5;
+            // TODO: Cartes en main -> pile à part au lieu de défausse
+        }
+    }
+
+    public void OnRemove(GameState state, Card card)
+    {
+        var currentPlayer = state.CurrentPlayer;
+        if (currentPlayer == null) return;
+
+        if (card.IsUpright)
+        {
+            // Retourner les cartes de la pile temporaire vers MainDeck
+            const string tempDeckName = "Papesse_Temporary";
+            if (currentPlayer.Decks.TryGetValue(tempDeckName, out var tempDeck))
+            {
+                currentPlayer.Decks["MainDeck"].AddCards(tempDeck.Cards);
+                currentPlayer.Decks.Remove(tempDeckName);
+            }
+        }
     }
 }

@@ -19,7 +19,8 @@ public class Card
     public bool IsUpright { get; set; }   // true = endroit, false = envers (180° rotation)
     public int Price { get; set; }
 
-    private readonly Queue<ICardEffect> _effects;
+    public IReadOnlyList<ICardEffect> Effects => _effects;
+    private readonly List<ICardEffect> _effects;
 
     /// <summary>Creates a new card with the specified textures.</summary>
     public Card(Texture2D textureRecto, Texture2D textureVerso, bool isUpright = true)
@@ -27,26 +28,16 @@ public class Card
         TextureRecto = textureRecto;
         TextureVerso = textureVerso;
         IsUpright = isUpright;
-        _effects = new Queue<ICardEffect>();
+        _effects = new List<ICardEffect>();
     }
 
     /// <summary>Creates a card with specific effects.</summary>
-    public Card(Texture2D textureRecto, Texture2D textureVerso, bool isUpright, Queue<ICardEffect> effects)
+    public Card(Texture2D textureRecto, Texture2D textureVerso, bool isUpright, List<ICardEffect> effects)
     {
         TextureRecto = textureRecto;
         TextureVerso = textureVerso;
         IsUpright = isUpright;
         _effects = effects;
-    }
-
-    /// <summary>Resolve the card, resolving all its effects.</summary>
-    public void Resolve(GameContext context)
-    {
-        while (_effects.Count > 0)
-        {
-            var effect = _effects.Dequeue();
-            effect.Resolve(context, this);
-        }
     }
 
     /// <summary>Starts building a card with the specified effect.</summary>
@@ -93,18 +84,17 @@ public class Card
             return this;
         }
 
-        public Card Build(GameContext context)
+        public Card Build(GraphicsResources gfx)
         {
             if (_rectoPath == null)
                 throw new InvalidOperationException("TextureRecto must be specified");
 
-            var recto = context.Content.Load<Texture2D>(_rectoPath);
+            var recto = gfx.Content.Load<Texture2D>(_rectoPath);
             var verso = _versoPath != null
-                ? context.Content.Load<Texture2D>(_versoPath)
-                : context.CardVersoTexture;
+                ? gfx.Content.Load<Texture2D>(_versoPath)
+                : gfx.CardVersoTexture;
 
-            var effects = new Queue<ICardEffect>();
-            effects.Enqueue(_effect);
+            var effects = new List<ICardEffect> { _effect };
 
             return new Card(recto, verso, _isUpright, effects)
             {

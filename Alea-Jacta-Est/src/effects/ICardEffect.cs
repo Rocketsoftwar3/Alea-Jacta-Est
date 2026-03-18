@@ -1,11 +1,13 @@
-namespace Alea_Jacta_Est.Effects;
-
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 
-/// <summary>Represents an effect that can be applied when a card is played.</summary>
+namespace Alea_Jacta_Est.Effects;
+
 public interface ICardEffect
 {
-    /// <summary>Resolves the effect in the given game context.</summary>
-    void Resolve(GameContext context, Card card);
+    void OnPlay(GameState state, Card card);
+    void OnTurnStart(GameState state, Card card) { }
+    void OnTurnEnd(GameState state, Card card) { }
+    void OnRemove(GameState state, Card card) { }
+    int Duration => 0; // 0 = one-shot, >0 = number of turns
 }

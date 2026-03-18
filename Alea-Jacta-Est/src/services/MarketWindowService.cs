@@ -1,22 +1,29 @@
 using System.IO;
 using System.Numerics;
 using ImGuiNET;
+using Alea_Jacta_Est.Commands;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
 
 namespace Alea_Jacta_Est.Services;
 
-/// <summary>Closable ImGui window showing the local player's market.</summary>
-public static class MarketWindowService
+public class MarketWindowService
 {
-    private static readonly Vector2 CardThumbSize = new(36, 60); // 216/6 x 360/6
+    private static readonly Vector2 CardThumbSize = new(36, 60);
 
-    public static void Render(GameContext ctx, ImGuiRenderer imGuiRenderer, ref bool isOpen)
+    private readonly CommandQueue _commands;
+
+    public MarketWindowService(CommandQueue commands)
+    {
+        _commands = commands;
+    }
+
+    public void Render(GameState state, ImGuiRenderer imGuiRenderer, ref bool isOpen)
     {
         if (!isOpen) return;
 
-        var player = ctx.LocalPlayer;
+        var player = state.LocalPlayer;
         var market = player.Market;
 
         ImGui.SetNextWindowSize(new Vector2(340, 380), ImGuiCond.FirstUseEver);
@@ -51,7 +58,6 @@ public static class MarketWindowService
                        | ImGuiTableFlags.ScrollY
                        | ImGuiTableFlags.SizingFixedFit;
 
-        // Reserve bottom space for a potential footer
         float tableHeight = ImGui.GetContentRegionAvail().Y;
 
         if (ImGui.BeginTable("market_table", 4, tableFlags, new Vector2(0, tableHeight)))
@@ -64,6 +70,7 @@ public static class MarketWindowService
             ImGui.TableHeadersRow();
 
             Card? cardToBuy = null;
+            int buyPrice = 0;
 
             for (int i = 0; i < market.Deck.Cards.Count; i++)
             {
@@ -101,17 +108,17 @@ public static class MarketWindowService
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (CardThumbSize.Y * 0.5f - ImGui.GetFrameHeight() * 0.5f));
                 if (!canAfford) ImGui.BeginDisabled();
                 if (ImGui.Button($"Acheter##{i}"))
+                {
                     cardToBuy = card;
+                    buyPrice = price;
+                }
                 if (!canAfford) ImGui.EndDisabled();
             }
 
-            // Process purchase outside the loop
+            // Enqueue command instead of mutating state directly
             if (cardToBuy != null)
             {
-                int price = market.GetDiscountedPrice(cardToBuy.Price);
-                player.Wallet -= price;
-                market.Deck.RemoveCard(cardToBuy);
-                player.Decks["MainDeck"].AddCard(cardToBuy);
+                _commands.Enqueue(new BuyCardCommand(player, cardToBuy, buyPrice));
             }
 
             ImGui.EndTable();

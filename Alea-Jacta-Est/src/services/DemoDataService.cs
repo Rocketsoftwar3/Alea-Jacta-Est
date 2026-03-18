@@ -3,25 +3,30 @@ using Alea_Jacta_Est.Main;
 
 namespace Alea_Jacta_Est.Services;
 
-/// <summary>Initializes demo data for testing.</summary>
-public static class DemoDataService
+public class DemoDataService
 {
-    /// <summary>Initializes demo decks for local player and opponents.</summary>
-    public static void InitializeDemoDecks(GameContext context)
+    private readonly CardFactory _cardFactory;
+    private readonly GraphicsResources _gfx;
+
+    public DemoDataService(CardFactory cardFactory, GraphicsResources gfx)
     {
-        // Initialize local player decks
-        var localPlayer = context.LocalPlayer;
+        _cardFactory = cardFactory;
+        _gfx = gfx;
+    }
+
+    public void InitializeDemoDecks(GameState state)
+    {
+        var localPlayer = state.LocalPlayer;
         localPlayer.Wallet = 100;
 
         for (int i = 0; i < 10; i++)
         {
-            localPlayer.Decks["MainDeck"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
+            localPlayer.Decks["MainDeck"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
         }
 
-        // Populate market with random cards
         for (int i = 0; i < 6; i++)
         {
-            var card = CardFactory.CreateRandom().Build(context);
+            var card = _cardFactory.BuildRandom();
             localPlayer.Market.Deck.AddCard(card);
         }
 
@@ -29,14 +34,14 @@ public static class DemoDataService
         {
             for (int j = 0; j < 3; j++)
             {
-                localPlayer.Decks[$"BoardDeck{i}"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
+                localPlayer.Decks[$"BoardDeck{i}"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
             }
         }
 
         for (int i = 0; i < 5; i++)
         {
-            localPlayer.Decks["SpecialDeck"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
-            localPlayer.Decks["DiscardDeck"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
+            localPlayer.Decks["SpecialDeck"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
+            localPlayer.Decks["DiscardDeck"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
         }
 
         // Add 4 opponent players
@@ -44,27 +49,26 @@ public static class DemoDataService
         {
             var opponent = new Player($"Opponent {opponentIndex + 1}", opponentIndex + 1, isLocalPlayer: false);
 
-            // Add cards to opponent decks
             for (int i = 0; i < 8; i++)
             {
-                opponent.Decks["MainDeck"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
+                opponent.Decks["MainDeck"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
             }
 
             for (int i = 0; i < 4; i++)
             {
                 for (int j = 0; j < 2; j++)
                 {
-                    opponent.Decks[$"BoardDeck{i}"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
+                    opponent.Decks[$"BoardDeck{i}"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
                 }
             }
 
             for (int i = 0; i < 3; i++)
             {
-                opponent.Decks["SpecialDeck"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
-                opponent.Decks["DiscardDeck"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
+                opponent.Decks["SpecialDeck"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
+                opponent.Decks["DiscardDeck"].AddCard(new Card(_gfx.CardRectoTexture, _gfx.CardVersoTexture));
             }
 
-            context.Players.Add(opponent);
+            state.Players.Add(opponent);
         }
     }
 }

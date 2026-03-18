@@ -17,12 +17,10 @@ public enum DeckDisplayMode
 /// <summary>Screen-space info for a rendered card (used for hit-testing).</summary>
 public record CardScreenInfo(Card Card, Vector2 Center, float Rotation, float RenderScale);
 
-/// <summary>Static renderer for decks.</summary>
-public static class DeckRenderer
+/// <summary>Renderer for decks — handles fan, stacked, and other display modes.</summary>
+public class DeckRenderer
 {
-
-    /// <summary>Draws a deck with the specified parameters.</summary>
-    public static void Draw(
+    public void Draw(
         SpriteBatch spriteBatch,
         Deck deck,
         Vector2 position,
@@ -54,8 +52,7 @@ public static class DeckRenderer
         }
     }
 
-    /// <summary>Returns the screen-space center, rotation and scale of each card in a deck.</summary>
-    public static List<CardScreenInfo> GetCardPositions(
+    public List<CardScreenInfo> GetCardPositions(
         Deck deck,
         Vector2 position,
         DeckDisplayMode displayMode,
@@ -131,7 +128,6 @@ public static class DeckRenderer
 
     private static void DrawCard(SpriteBatch spriteBatch, Card card, Vector2 position, bool isFrontVisible, float scale, float rotation)
     {
-        // card.IsFlipped lets the player individually flip a card regardless of deck config
         bool showFront = isFrontVisible ^ card.IsFlipped;
         var texture = showFront ? card.TextureRecto : card.TextureVerso;
         var origin = new Vector2(texture.Width / 2f, texture.Height / 2f);

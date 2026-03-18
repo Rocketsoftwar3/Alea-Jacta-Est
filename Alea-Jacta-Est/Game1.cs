@@ -1,21 +1,34 @@
+using Alea_Jacta_Est.Commands;
+using Alea_Jacta_Est.Effects;
+using Alea_Jacta_Est.Events;
 using Alea_Jacta_Est.ImGuiBackend;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Alea_Jacta_Est.Main;
+using Alea_Jacta_Est.Rendering;
 using Alea_Jacta_Est.Services;
 using Alea_Jacta_Est.Config;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Alea_Jacta_Est;
 
-/// <summary>Main game class - orchestrates game loop and services.</summary>
 public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
-    private GameContext _context;
-    private InputService _inputService;
     private ImGuiRenderer _imGuiRenderer;
+    private InputService _inputService;
 
-    private bool _isResizing = false;
+    // Core state
+    private GameState _state;
+    private GraphicsResources _gfx;
+    private EventBus _eventBus;
+    private CommandQueue _commands;
+
+    // Services
+    private GameRenderer _gameRenderer;
+    private ImGuiOverlayService _overlay;
+    private EffectManager _effectManager;
+
+    private bool _isResizing;
 
     public Game1()
     {
@@ -44,21 +57,14 @@ public class Game1 : Game
 
     private void OnClientSizeChanged(object sender, System.EventArgs e)
     {
-        if (_isResizing)
-            return;
-
+        if (_isResizing) return;
         _isResizing = true;
 
-        // Update backbuffer to match window size
         _graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
         _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
         _graphics.ApplyChanges();
 
-        // Update viewport for letterboxing calculation
-        if (_context != null)
-        {
-            _context.Viewport.Update(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
-        }
+        _gfx?.Viewport.Update(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height);
 
         _isResizing = false;
     }
@@ -67,36 +73,50 @@ public class Game1 : Game
     {
         var spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        // Load textures
         var backgroundTexture = Content.Load<Texture2D>("main_background");
         var cardRectoTexture = Content.Load<Texture2D>("card_recto_placeholder");
         var cardVersoTexture = Content.Load<Texture2D>("cards/tarot_dos");
 
-        // Initialize GameContext
-        _context = new GameContext("LocalPlayer");
-        _context.InitGraphics(spriteBatch, GraphicsDevice, Content, backgroundTexture, cardRectoTexture, cardVersoTexture);
+        // Core state
+        _state = new GameState("LocalPlayer");
+        _gfx = new GraphicsResources(spriteBatch, GraphicsDevice, Content, backgroundTexture, cardRectoTexture, cardVersoTexture);
+        _eventBus = new EventBus();
+        _commands = new CommandQueue();
+
+        // Services (DI manuelle)
+        var deckRenderer = new DeckRenderer();
+        _gameRenderer = new GameRenderer(_gfx, deckRenderer);
+        _effectManager = new EffectManager(_eventBus);
+
+        var cardInteraction = new CardInteractionService(deckRenderer, _commands);
+        var marketWindow = new MarketWindowService(_commands);
+        _overlay = new ImGuiOverlayService(cardInteraction, marketWindow);
 
         // Initialize demo data
-        DemoDataService.InitializeDemoDecks(_context);
+        var cardFactory = new CardFactory(_gfx);
+        var demoData = new DemoDataService(cardFactory, _gfx);
+        demoData.InitializeDemoDecks(_state);
     }
 
     protected override void Update(GameTime gameTime)
     {
-        // Handle input
         _inputService.Update();
 
         if (_inputService.IsExitRequested())
             Exit();
+
+        // Execute all commands queued during previous frame's render
+        _commands.ExecuteAll(_state, _eventBus);
 
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        _context.Render();
+        _gameRenderer.Render(_state);
 
         _imGuiRenderer.BeforeLayout(gameTime);
-        ImGuiOverlayService.Render(_context, _imGuiRenderer);
+        _overlay.Render(_state, _gfx, _imGuiRenderer);
         _imGuiRenderer.AfterLayout();
 
         base.Draw(gameTime);
