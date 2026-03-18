@@ -1,5 +1,6 @@
 using System.Numerics;
 using Alea_Jacta_Est.Entities;
+using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
 using ImGuiNET;
 
@@ -8,10 +9,10 @@ namespace Alea_Jacta_Est.Services;
 /// <summary>Renders all game UI using Dear ImGui.</summary>
 public static class ImGuiOverlayService
 {
-    public static void Render(GameContext ctx)
+    public static void Render(GameContext ctx, ImGuiRenderer imGuiRenderer)
     {
         // Card layer first → rendered behind info panels (ImGui Z-order = creation order)
-        CardInteractionService.Render(ctx);
+        CardInteractionService.Render(ctx, imGuiRenderer);
 
         RenderGameStatePanel(ctx);
         RenderPlayersPanel(ctx);

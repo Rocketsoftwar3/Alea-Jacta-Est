@@ -96,7 +96,7 @@ public class Game1 : Game
         _context.Render();
 
         _imGuiRenderer.BeforeLayout(gameTime);
-        ImGuiOverlayService.Render(_context);
+        ImGuiOverlayService.Render(_context, _imGuiRenderer);
         _imGuiRenderer.AfterLayout();
 
         base.Draw(gameTime);

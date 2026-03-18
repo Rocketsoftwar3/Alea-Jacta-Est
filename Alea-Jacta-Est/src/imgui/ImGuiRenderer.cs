@@ -26,6 +26,7 @@ public class ImGuiRenderer
     private int _indexBufferSize;
 
     private readonly Dictionary<IntPtr, Texture2D> _loadedTextures = new();
+    private readonly Dictionary<Texture2D, IntPtr> _textureToId    = new();
     private int _textureId;
     private IntPtr? _fontTextureId;
 
@@ -82,10 +83,24 @@ public class ImGuiRenderer
     {
         var id = new IntPtr(_textureId++);
         _loadedTextures.Add(id, texture);
+        _textureToId[texture] = id;
         return id;
     }
 
-    public virtual void UnbindTexture(IntPtr textureId) => _loadedTextures.Remove(textureId);
+    /// <summary>Returns the existing binding for <paramref name="texture"/>, or creates one. Safe to call every frame.</summary>
+    public virtual IntPtr GetOrBindTexture(Texture2D texture)
+    {
+        if (_textureToId.TryGetValue(texture, out var existing))
+            return existing;
+        return BindTexture(texture);
+    }
+
+    public virtual void UnbindTexture(IntPtr textureId)
+    {
+        if (_loadedTextures.TryGetValue(textureId, out var tex))
+            _textureToId.Remove(tex);
+        _loadedTextures.Remove(textureId);
+    }
 
     public virtual void BeforeLayout(GameTime gameTime)
     {
