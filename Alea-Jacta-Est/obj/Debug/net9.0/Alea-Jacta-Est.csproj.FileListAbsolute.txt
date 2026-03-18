@@ -33,7 +33,6 @@ G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\obj\Debug\net9.0\Alea-Jacta-Est.pdb
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\obj\Debug\net9.0\Alea-Jacta-Est.genruntimeconfig.cache
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\obj\Debug\net9.0\ref\Alea-Jacta-Est.dll
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\card_recto_placeholder.xnb
-G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\main_background.xnb
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_dos.xnb
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_amoureux.xnb
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_bateleur.xnb
@@ -43,3 +42,10 @@ G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_i
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_justice.xnb
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_pape.xnb
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_papesse.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\main_background.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\ImGui.NET.dll
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\linux-x64\native\libcimgui.so
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\osx\native\libcimgui.dylib
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\win-arm64\native\cimgui.dll
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\win-x64\native\cimgui.dll
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\win-x86\native\cimgui.dll

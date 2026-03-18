@@ -15,7 +15,8 @@ public class Card
     public Texture2D TextureRecto { get; set; }
     public Texture2D TextureVerso { get; set; }
     public bool IsHovered { get; set; }
-    public bool IsUpright { get; set; }
+    public bool IsFlipped { get; set; }   // true = shows verso (face-down)
+    public bool IsUpright { get; set; }   // true = endroit, false = envers (180° rotation)
     public int Price { get; set; }
 
     private readonly Queue<ICardEffect> _effects;

@@ -1,3 +1,4 @@
+using Alea_Jacta_Est.ImGuiBackend;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Alea_Jacta_Est.Main;
@@ -12,6 +13,7 @@ public class Game1 : Game
     private GraphicsDeviceManager _graphics;
     private GameContext _context;
     private InputService _inputService;
+    private ImGuiRenderer _imGuiRenderer;
 
     private bool _isResizing = false;
 
@@ -32,10 +34,12 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        // Initialize input service
         _inputService = new InputService(_graphics, Window);
 
         base.Initialize();
+
+        _imGuiRenderer = new ImGuiRenderer(this);
+        _imGuiRenderer.RebuildFontAtlas();
     }
 
     private void OnClientSizeChanged(object sender, System.EventArgs e)
@@ -89,8 +93,11 @@ public class Game1 : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        // Render the game
         _context.Render();
+
+        _imGuiRenderer.BeforeLayout(gameTime);
+        ImGuiOverlayService.Render(_context);
+        _imGuiRenderer.AfterLayout();
 
         base.Draw(gameTime);
     }
