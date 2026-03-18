@@ -9,6 +9,8 @@ namespace Alea_Jacta_Est.Services;
 /// <summary>Renders all game UI using Dear ImGui.</summary>
 public static class ImGuiOverlayService
 {
+    private static bool _marketOpen = false;
+
     public static void Render(GameContext ctx, ImGuiRenderer imGuiRenderer)
     {
         // Card layer first → rendered behind info panels (ImGui Z-order = creation order)
@@ -16,12 +18,13 @@ public static class ImGuiOverlayService
 
         RenderGameStatePanel(ctx);
         RenderPlayersPanel(ctx);
+        MarketWindowService.Render(ctx, imGuiRenderer, ref _marketOpen);
     }
 
     private static void RenderGameStatePanel(GameContext ctx)
     {
         ImGui.SetNextWindowPos(new Vector2(10, 10), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSize(new Vector2(220, 110), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(new Vector2(220, 140), ImGuiCond.FirstUseEver);
         ImGui.Begin("Partie");
 
         var stateLabel = ctx.State switch
@@ -38,12 +41,17 @@ public static class ImGuiOverlayService
         var current = ctx.CurrentPlayer;
         ImGui.Text($"Au tour de: {(current != null ? current.Name : "-")}");
 
+        ImGui.Separator();
+        string marketLabel = _marketOpen ? "Fermer Marché" : "Ouvrir Marché";
+        if (ImGui.Button(marketLabel))
+            _marketOpen = !_marketOpen;
+
         ImGui.End();
     }
 
     private static void RenderPlayersPanel(GameContext ctx)
     {
-        ImGui.SetNextWindowPos(new Vector2(10, 130), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowPos(new Vector2(10, 160), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSize(new Vector2(280, 300), ImGuiCond.FirstUseEver);
         ImGui.Begin("Joueurs");
 

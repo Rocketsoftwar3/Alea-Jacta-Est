@@ -11,9 +11,18 @@ public static class DemoDataService
     {
         // Initialize local player decks
         var localPlayer = context.LocalPlayer;
+        localPlayer.Wallet = 100;
+
         for (int i = 0; i < 10; i++)
         {
             localPlayer.Decks["MainDeck"].AddCard(new Card(context.CardRectoTexture, context.CardVersoTexture));
+        }
+
+        // Populate market with random cards
+        for (int i = 0; i < 6; i++)
+        {
+            var card = CardFactory.CreateRandom().Build(context);
+            localPlayer.Market.Deck.AddCard(card);
         }
 
         for (int i = 0; i < 4; i++)
