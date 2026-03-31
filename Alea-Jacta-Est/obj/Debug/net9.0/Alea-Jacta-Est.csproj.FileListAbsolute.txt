@@ -50,3 +50,17 @@ G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\win-arm64\na
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\win-x64\native\cimgui.dll
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\runtimes\win-x86\native\cimgui.dll
 G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\tarot_mort.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\goldcoin.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\10Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\1Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\2Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\3Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\4Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\5Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\6Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\7Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\8Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\9Baton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\chevalierBaton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\reineBaton.xnb
+G:\.dev\net\Alea-Jacta-Est\Alea-Jacta-Est\bin\Debug\net9.0\Content\cards\stick\roiBaton.xnb

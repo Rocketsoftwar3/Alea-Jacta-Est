@@ -11,6 +11,8 @@ public class ArcanaCard : Card
 {
     public int ArcanaNumber { get; }
     public string ArcanaName { get; }
+    public string DescriptionEndroit { get; set; } = "";
+    public string DescriptionEnvers  { get; set; } = "";
 
     public IReadOnlyList<ICardEffect> Effects => _effects;
     private readonly List<ICardEffect> _effects;
@@ -39,6 +41,8 @@ public class ArcanaCard : Card
         private string? _versoPath;
         private bool _isUpright = true;
         private int _price = 0;
+        private string _descEndroit = "";
+        private string _descEnvers  = "";
 
         public ArcanaCardBuilder(int arcanaNumber, string arcanaName, ICardEffect effect)
         {
@@ -51,6 +55,8 @@ public class ArcanaCard : Card
         public ArcanaCardBuilder TextureVerso(string path) { _versoPath = path; return this; }
         public ArcanaCardBuilder Upright(bool upright) { _isUpright = upright; return this; }
         public ArcanaCardBuilder WithPrice(int price) { _price = price; return this; }
+        public ArcanaCardBuilder WithDescription(string endroit, string envers)
+        { _descEndroit = endroit; _descEnvers = envers; return this; }
 
         public ArcanaCard Build(GraphicsResources gfx)
         {
@@ -65,7 +71,9 @@ public class ArcanaCard : Card
             return new ArcanaCard(_arcanaNumber, _arcanaName, recto, verso, _isUpright,
                                   new List<ICardEffect> { _effect })
             {
-                Price = _price
+                Price = _price,
+                DescriptionEndroit = _descEndroit,
+                DescriptionEnvers  = _descEnvers
             };
         }
     }

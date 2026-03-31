@@ -15,6 +15,7 @@ public class GraphicsResources
     public Texture2D BackgroundTexture { get; }
     public Texture2D CardRectoTexture { get; }
     public Texture2D CardVersoTexture { get; }
+    public Texture2D GoldCoin { get; }
 
     public GraphicsResources(
         SpriteBatch spriteBatch,
@@ -22,7 +23,8 @@ public class GraphicsResources
         ContentManager content,
         Texture2D background,
         Texture2D cardRecto,
-        Texture2D cardVerso)
+        Texture2D cardVerso,
+        Texture2D goldCoin)
     {
         SpriteBatch = spriteBatch;
         GraphicsDevice = graphicsDevice;
@@ -30,6 +32,7 @@ public class GraphicsResources
         BackgroundTexture = background;
         CardRectoTexture = cardRecto;
         CardVersoTexture = cardVerso;
+        GoldCoin = goldCoin;
 
         Viewport = new GameViewport();
         Viewport.Update(graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height);
