@@ -74,12 +74,14 @@ public class Game1 : Game
     {
         var spriteBatch      = new SpriteBatch(GraphicsDevice);
         var backgroundTex    = Content.Load<Texture2D>("main_background");
+        var bgLayer0         = Content.Load<Texture2D>("background/background_layer0");
+        var bgLayer1         = Content.Load<Texture2D>("background/background_layer1");
         var cardRectoTex     = Content.Load<Texture2D>("card_recto_placeholder");
         var cardVersoTex     = Content.Load<Texture2D>("cards/tarot_dos");
         var goldCoinTex      = Content.Load<Texture2D>("goldcoin");
 
         _state    = new GameState("LocalPlayer");
-        _gfx      = new GraphicsResources(spriteBatch, GraphicsDevice, Content, backgroundTex, cardRectoTex, cardVersoTex, goldCoinTex);
+        _gfx      = new GraphicsResources(spriteBatch, GraphicsDevice, Content, backgroundTex, bgLayer0, bgLayer1, cardRectoTex, cardVersoTex, goldCoinTex);
         _eventBus = new EventBus();
         _commands = new CommandQueue();
 
@@ -87,6 +89,11 @@ public class Game1 : Game
         _effectManager = new EffectManager(_eventBus);
         _damageCalc    = new DamageCalculationService();
         _turnService   = new TurnService(_effectManager, _damageCalc, _eventBus);
+
+        // Trigger background shake on player actions
+        _eventBus.Subscribe<Events.CardPlacedOnBoard>(_ => _gameRenderer.TriggerShake());
+        _eventBus.Subscribe<Events.CardPlayed>(_ => _gameRenderer.TriggerShake());
+        _eventBus.Subscribe<Events.TurnValidated>(_ => _gameRenderer.TriggerShake());
 
         var cardFactory   = new CardFactory(_gfx);
         var demoData      = new DemoDataService(cardFactory, _gfx);
@@ -130,7 +137,7 @@ public class Game1 : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        _gameRenderer.Render(_state);
+        _gameRenderer.Render(_state, gameTime);
 
         _imGuiRenderer.BeforeLayout(gameTime);
         _overlay.Render(_state, _gfx, _imGuiRenderer);

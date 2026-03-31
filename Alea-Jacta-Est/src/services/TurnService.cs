@@ -216,8 +216,7 @@ public class TurnService
             discard.AddCards(hand.Cards.ToList());
             hand.Cards.Clear();
 
-            arcanaDiscard.AddCards(arcanaHand.Cards.ToList());
-            arcanaHand.Cards.Clear();
+            // Arcana cards stay in hand between turns — only played ones were already moved to arcanaDiscard
         }
 
         state.AdvanceTurnPhase(); // CleanupPhase → ShopPhase

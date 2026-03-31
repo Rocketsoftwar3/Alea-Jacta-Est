@@ -12,8 +12,8 @@ public record BuyCardCommand(Player Buyer, Card Card, int Price) : IGameCommand
         Buyer.Wallet -= Price;
         Buyer.Market.Deck.RemoveCard(Card);
 
-        // ArcanaCards go to the arcana draw pile, ValueCards to the main deck
-        string targetDeck = Card is ArcanaCard ? "SpecialDeck" : "MainDeck";
+        // ArcanaCards go directly to hand (immediately usable), ValueCards to the draw pile
+        string targetDeck = Card is ArcanaCard ? "ArcanaHandDeck" : "MainDeck";
         Buyer.Decks[targetDeck].AddCard(Card);
 
         events.Publish(new CardPurchased(Buyer, Card, Price));

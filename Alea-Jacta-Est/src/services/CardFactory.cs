@@ -141,25 +141,53 @@ public class CardFactory
     /// <summary>Returns the content path for a suit-specific recto texture, or null to use the placeholder.</summary>
     private static string? GetValueCardTexturePath(CardSuit suit, CardRank rank)
     {
-        if (suit != CardSuit.Bâton) return null;
-        string? rankPrefix = rank switch
+        switch (suit)
         {
-            CardRank.Un       => "1",
-            CardRank.Deux     => "2",
-            CardRank.Trois    => "3",
-            CardRank.Quatre   => "4",
-            CardRank.Cinq     => "5",
-            CardRank.Six      => "6",
-            CardRank.Sept     => "7",
-            CardRank.Huit     => "8",
-            CardRank.Neuf     => "9",
-            CardRank.Dix      => "10",
-            CardRank.Cavalier => "chevalier",
-            CardRank.Reine    => "reine",
-            CardRank.Roi      => "roi",
-            _                 => null
-        };
-        return rankPrefix != null ? $"cards/stick/{rankPrefix}Baton" : null;
+            case CardSuit.Bâton:
+                if (rank == CardRank.Valet) return "cards/stick/valetBaton";
+                string? batonPrefix = rank switch
+                {
+                    CardRank.Un       => "1",
+                    CardRank.Deux     => "2",
+                    CardRank.Trois    => "3",
+                    CardRank.Quatre   => "4",
+                    CardRank.Cinq     => "5",
+                    CardRank.Six      => "6",
+                    CardRank.Sept     => "7",
+                    CardRank.Huit     => "8",
+                    CardRank.Neuf     => "9",
+                    CardRank.Dix      => "10",
+                    CardRank.Cavalier => "chevalier",
+                    CardRank.Reine    => "reine",
+                    CardRank.Roi      => "roi",
+                    _                 => null
+                };
+                return batonPrefix != null ? $"cards/stick/{batonPrefix}Baton" : null;
+
+            case CardSuit.Épée:
+                string? epeePrefix = rank switch
+                {
+                    CardRank.Un       => "1",
+                    CardRank.Deux     => "2",
+                    CardRank.Trois    => "3",
+                    CardRank.Quatre   => "4",
+                    CardRank.Cinq     => "5",
+                    CardRank.Six      => "6",
+                    CardRank.Sept     => "7",
+                    CardRank.Huit     => "8",
+                    CardRank.Neuf     => "9",
+                    CardRank.Dix      => "10",
+                    CardRank.Valet    => "valet",
+                    CardRank.Cavalier => "chevalier",
+                    CardRank.Reine    => "reine",
+                    CardRank.Roi      => "roi",
+                    _                 => null
+                };
+                return epeePrefix != null ? $"cards/sword/{epeePrefix}Epee" : null;
+
+            default:
+                return null;
+        }
     }
 
     /// <summary>Creates a ValueCard using the suit-specific texture when available, falling back to the generic placeholder.</summary>

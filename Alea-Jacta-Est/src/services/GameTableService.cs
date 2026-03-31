@@ -359,8 +359,19 @@ public class GameTableService
 
         ImGui.Separator();
 
-        // ── Hand fan ─────────────────────────────────────────────────
-        RenderHandFan(state, player, r, w - 12f, isPlayPhase, arcanaLimit, localIdx);
+        // ── Fan + arcana grid side by side ────────────────────────────
+        const float arcGridW = 96f; // 2 cols × small card
+        float fanW = w - 12f - arcGridW - 6f;
+
+        Vector2 splitOrigin = ImGui.GetCursorScreenPos();
+        RenderHandFan(state, player, r, fanW, isPlayPhase, localIdx);
+
+        // Arcana grid — right column, same vertical origin as the fan
+        ImGui.SetCursorScreenPos(new Vector2(splitOrigin.X + fanW + 6f, splitOrigin.Y));
+        RenderArcanaGrid(player, r, isPlayPhase, arcanaLimit, arcGridW, FanH);
+
+        // Advance cursor past the combined area
+        ImGui.SetCursorScreenPos(new Vector2(splitOrigin.X, splitOrigin.Y + FanH + 2f));
 
         ImGui.Separator();
 
@@ -399,6 +410,82 @@ public class GameTableService
         {
             ImGui.Separator();
             RenderTargetSelection(state);
+        }
+
+        ImGui.EndChild();
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // Arcana grid — 2-column scrollable grid on the right side of the fan
+    // ────────────────────────────────────────────────────────────────
+
+    private static readonly Vector2 CardArc  = new(40f, 66f);
+    private const int   ArcGridCols = 2;
+    private const float ArcGridGap  = 4f;
+
+    private void RenderArcanaGrid(Player player, ImGuiRenderer r, bool isPlayPhase, bool arcanaLimit, float gridW, float gridH)
+    {
+        if (!player.Decks.TryGetValue("ArcanaHandDeck", out var arcanaHand))
+            return;
+
+        // Header (outside scroll area)
+        string header = $"Arc. ({arcanaHand.Cards.Count})";
+        float hw = ImGui.CalcTextSize(header).X;
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (gridW - hw) * 0.5f);
+        ImGui.TextColored(arcanaHand.Cards.Count == 0
+            ? new Vector4(0.45f, 0.45f, 0.45f, 0.7f)
+            : new Vector4(0.85f, 0.55f, 1f, 1f), header);
+
+        float headerH  = ImGui.GetTextLineHeightWithSpacing() + 2f;
+        float scrollH  = gridH - headerH;
+        bool  canActivate = isPlayPhase && !arcanaLimit;
+
+        // Scrollable child — ImGui clips DrawList to child bounds automatically
+        ImGui.BeginChild("##arcgrid", new Vector2(gridW, scrollH), ImGuiChildFlags.Borders);
+        var dl = ImGui.GetWindowDrawList();
+
+        for (int i = 0; i < arcanaHand.Cards.Count; i++)
+        {
+            var card = arcanaHand.Cards[i];
+            if (card is not ArcanaCard ac) continue;
+
+            int   col = i % ArcGridCols;
+            int   row = i / ArcGridCols;
+            float x   = col * (CardArc.X + ArcGridGap);
+            float y   = row * (CardArc.Y + ArcGridGap);
+
+            // InvisibleButton in child-local coords — positions and sizes the hit area
+            ImGui.SetCursorPos(new Vector2(x, y));
+            ImGui.PushID(i);
+            bool pressed = ImGui.InvisibleButton("ag", CardArc);
+            ImGui.PopID();
+
+            // Draw card at the button's actual screen rect
+            Vector2 tl     = ImGui.GetItemRectMin();
+            Vector2 center = tl + CardArc * 0.5f;
+            var texId = r.GetOrBindTexture(card.TextureRecto);
+            DrawFanCard(dl, texId, center, 0f, CardArc);
+
+            bool hovered = ImGui.IsItemHovered();
+            if (hovered)
+            {
+                dl.AddRect(tl, tl + CardArc,
+                    ImGui.ColorConvertFloat4ToU32(new Vector4(0.85f, 0.55f, 1f, canActivate ? 1f : 0.35f)),
+                    3f, ImDrawFlags.None, 2f);
+                CardTooltip(r, card);
+            }
+
+            if (pressed && canActivate)
+                _commands.Enqueue(new ActivateArcanaCommand(player, ac, null, _effectManager));
+        }
+
+        // Red tint when limit reached
+        if (arcanaLimit && isPlayPhase && arcanaHand.Cards.Count > 0)
+        {
+            var wp = ImGui.GetWindowPos();
+            var ws = ImGui.GetWindowSize();
+            dl.AddRectFilled(wp, wp + ws,
+                ImGui.ColorConvertFloat4ToU32(new Vector4(0.8f, 0.1f, 0.1f, 0.12f)));
         }
 
         ImGui.EndChild();
@@ -474,7 +561,7 @@ public class GameTableService
     // Hand fan
     // ────────────────────────────────────────────────────────────────
 
-    private void RenderHandFan(GameState state, Player player, ImGuiRenderer r, float zoneW, bool isPlayPhase, bool arcanaLimit, int localIdx)
+    private void RenderHandFan(GameState state, Player player, ImGuiRenderer r, float zoneW, bool isPlayPhase, int localIdx)
     {
         var hand   = player.Decks["HandDeck"];
         var arcana = player.Decks["ArcanaHandDeck"];
@@ -536,47 +623,6 @@ public class GameTableService
             break;
         }
         foreach (var vc in toPlay) _commands.Enqueue(new PlayCardCommand(player, vc));
-
-        // ── Arcana cards (right side, upright) ───────────────────────
-        float arcStartX = origin.X + zoneW * 0.80f;
-        float arcY      = anchorY - CardFan.Y * 0.5f;
-
-        var toActivate = new List<ArcanaCard>();
-        for (int i = 0; i < arcana.Cards.Count; i++)
-        {
-            var card   = arcana.Cards[i];
-            float arcX = arcStartX + i * (CardFan.X + 4f);
-            var center = new Vector2(arcX + CardFan.X * 0.5f, arcY + CardFan.Y * 0.5f);
-
-            if (arcanaLimit && isPlayPhase)
-            {
-                dl.AddRectFilled(
-                    new Vector2(center.X - CardFan.X * 0.5f, center.Y - CardFan.Y * 0.5f),
-                    new Vector2(center.X + CardFan.X * 0.5f, center.Y + CardFan.Y * 0.5f),
-                    ImGui.ColorConvertFloat4ToU32(new Vector4(0, 0, 0, 0.5f)));
-            }
-
-            var tex = r.GetOrBindTexture(card.TextureRecto);
-            DrawFanCard(dl, tex, center, 0f, CardFan);
-
-            if (IsMouseInRotatedRect(mousePos, center, CardFan.X, CardFan.Y, 0f))
-            {
-                CardTooltip(r, card);
-                if (clicked && isPlayPhase && !arcanaLimit && card is ArcanaCard ac)
-                {
-                    toActivate.Add(ac);
-                    clicked = false;
-                }
-            }
-        }
-        foreach (var ac in toActivate)
-            _commands.Enqueue(new ActivateArcanaCommand(player, ac, null, _effectManager));
-
-        if (arcanaLimit && isPlayPhase && arcana.Cards.Count > 0)
-        {
-            ImGui.SetCursorScreenPos(new Vector2(arcStartX, arcY - 16f));
-            ImGui.TextColored(new Vector4(1f, 0.4f, 0.4f, 1f), "(limite)");
-        }
     }
 
     // ────────────────────────────────────────────────────────────────

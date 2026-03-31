@@ -13,6 +13,8 @@ public class GraphicsResources
     public SamplerState HighQualitySampler { get; }
 
     public Texture2D BackgroundTexture { get; }
+    public Texture2D BackgroundLayer0 { get; }
+    public Texture2D BackgroundLayer1 { get; }
     public Texture2D CardRectoTexture { get; }
     public Texture2D CardVersoTexture { get; }
     public Texture2D GoldCoin { get; }
@@ -22,6 +24,8 @@ public class GraphicsResources
         GraphicsDevice graphicsDevice,
         ContentManager content,
         Texture2D background,
+        Texture2D backgroundLayer0,
+        Texture2D backgroundLayer1,
         Texture2D cardRecto,
         Texture2D cardVerso,
         Texture2D goldCoin)
@@ -30,6 +34,8 @@ public class GraphicsResources
         GraphicsDevice = graphicsDevice;
         Content = content;
         BackgroundTexture = background;
+        BackgroundLayer0 = backgroundLayer0;
+        BackgroundLayer1 = backgroundLayer1;
         CardRectoTexture = cardRecto;
         CardVersoTexture = cardVerso;
         GoldCoin = goldCoin;

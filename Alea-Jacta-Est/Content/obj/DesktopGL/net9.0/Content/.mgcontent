@@ -16,6 +16,23 @@
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/tarot_papesse.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/card_recto_placeholder.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/main_background.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/background/background_layer0.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/background/background_layer1.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/valetBaton.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/1Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/2Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/3Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/4Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/5Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/6Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/7Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/8Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/9Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/10Epee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/valetEpee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/chevalierEpee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/reineEpee.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/roiEpee.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/goldcoin.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/1Baton.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/2Baton.png</File>
@@ -32,6 +49,23 @@
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/roiBaton.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
