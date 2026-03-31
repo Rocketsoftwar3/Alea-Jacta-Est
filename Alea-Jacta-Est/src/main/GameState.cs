@@ -35,6 +35,12 @@ public class GameState
     /// <summary>Per-player round state keyed by player index in Players list.</summary>
     public Dictionary<int, PlayerTurnState> TurnStates { get; }
 
+    /// <summary>Set when an arcana activation is waiting for a target to be selected.</summary>
+    public PendingActivation? PendingActivation { get; set; }
+
+    /// <summary>Populated when Phase transitions to Finished. Sorted by TotalDamageDealt descending.</summary>
+    public List<(Player Player, int TotalDamageDealt)> FinalScores { get; private set; } = new();
+
     public Player? CurrentPlayer => Players.Count > 0 && CurrentPlayerIndex < Players.Count
         ? Players[CurrentPlayerIndex]
         : null;
@@ -88,5 +94,28 @@ public class GameState
         CurrentTurn++;
         foreach (var ts in TurnStates.Values)
             ts.Reset();
+    }
+
+    /// <summary>Checks if only one (or zero) player remains alive. Transitions to Finished if so.</summary>
+    public bool CheckVictory()
+    {
+        if (Phase != GamePhase.InProgress) return false;
+
+        var alive = Players.Where(p => p.Health > 0).ToList();
+        if (alive.Count <= 1)
+        {
+            Phase = GamePhase.Finished;
+            BuildFinalScores();
+            return true;
+        }
+        return false;
+    }
+
+    private void BuildFinalScores()
+    {
+        FinalScores = Players
+            .Select((p, i) => (Player: p, TotalDamageDealt: TurnStates.TryGetValue(i, out var ts) ? ts.TotalDamageDealt : 0))
+            .OrderByDescending(x => x.TotalDamageDealt)
+            .ToList();
     }
 }

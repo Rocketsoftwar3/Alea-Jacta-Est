@@ -15,6 +15,8 @@ public class ImGuiOverlayService
     private readonly MarketWindowService _marketWindow;
     private readonly HandWindowService _handWindow;
     private readonly BoardWindowService _boardWindow;
+    private readonly TargetSelectionWindowService _targetSelection;
+    private readonly VictoryScreenService _victoryScreen;
     private readonly CommandQueue _commands;
 
     public ImGuiOverlayService(
@@ -22,12 +24,16 @@ public class ImGuiOverlayService
         MarketWindowService marketWindow,
         HandWindowService handWindow,
         BoardWindowService boardWindow,
+        TargetSelectionWindowService targetSelection,
+        VictoryScreenService victoryScreen,
         CommandQueue commands)
     {
         _cardInteraction = cardInteraction;
         _marketWindow = marketWindow;
         _handWindow = handWindow;
         _boardWindow = boardWindow;
+        _targetSelection = targetSelection;
+        _victoryScreen = victoryScreen;
         _commands = commands;
     }
 
@@ -40,6 +46,8 @@ public class ImGuiOverlayService
         _handWindow.Render(state, imGuiRenderer);
         _boardWindow.Render(state, imGuiRenderer);
         _marketWindow.Render(state, imGuiRenderer, ref _marketOpen);
+        _targetSelection.Render(state);
+        _victoryScreen.Render(state);
     }
 
     private void RenderGameStatePanel(GameState state)
@@ -129,6 +137,25 @@ public class ImGuiOverlayService
                 {
                     if (player.Decks.TryGetValue(deckName, out var deck))
                         ImGui.Text($"{deckName,-20}: {deck.Cards.Count}");
+                }
+
+                // Impératrice endroit : afficher la main des adversaires si le flag est actif
+                if (!isLocal)
+                {
+                    bool canSeeHands = state.TurnStates.TryGetValue(0, out var localTs)
+                        && localTs.CanSeeOpponentHands;
+                    if (canSeeHands && player.Decks.TryGetValue("HandDeck", out var opponentHand)
+                        && opponentHand.Cards.Count > 0)
+                    {
+                        ImGui.TextColored(new System.Numerics.Vector4(0.4f, 1f, 0.8f, 1f), "Main visible (Impératrice) :");
+                        foreach (var c in opponentHand.Cards)
+                        {
+                            string cardLabel = c is Entities.ValueCard ovc ? ovc.DisplayName
+                                : c is Entities.ArcanaCard oac ? oac.ArcanaName
+                                : c.TextureRecto.Name;
+                            ImGui.TextDisabled($"  {cardLabel}");
+                        }
+                    }
                 }
 
                 ImGui.Unindent();

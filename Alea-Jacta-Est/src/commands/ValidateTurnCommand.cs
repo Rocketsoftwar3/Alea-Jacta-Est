@@ -16,8 +16,13 @@ public record ValidateTurnCommand(int PlayerIndex) : IGameCommand
         if (player != null)
             events.Publish(new TurnValidated(player));
 
-        // If all players validated → advance to ResolutionPhase
-        if (state.AllPlayersValidated && state.CurrentTurnPhase == TurnPhase.PlayPhase)
-            state.AdvanceTurnPhase(); // PlayPhase → ValidatePhase → handled by TurnService
+        // TODO: Réseau — attendre la validation de tous les vrais joueurs connectés
+        // Pour l'instant : le joueur local valide → on passe directement en résolution
+        if (player != null && player.IsLocalPlayer && state.CurrentTurnPhase == TurnPhase.PlayPhase)
+        {
+            state.AdvanceTurnPhase(); // PlayPhase → ValidatePhase
+            state.AdvanceTurnPhase(); // ValidatePhase → ResolutionPhase
+            events.Publish(new TurnPhaseChanged(state.CurrentTurnPhase));
+        }
     }
 }

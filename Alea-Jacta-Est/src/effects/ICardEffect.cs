@@ -10,4 +10,8 @@ public interface ICardEffect
     void OnTurnEnd(GameState state, ArcanaCard card) { }
     void OnRemove(GameState state, ArcanaCard card) { }
     int Duration => 0; // 0 = one-shot, >0 = number of turns
+
+    /// <summary>Returns true when this effect needs a target before OnPlay is called.
+    /// The selected target will be available via state.PendingActivation.SelectedTarget.</summary>
+    bool RequiresTarget(ArcanaCard card) => false;
 }

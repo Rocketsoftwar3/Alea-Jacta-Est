@@ -96,11 +96,16 @@ public class Game1 : Game
         var marketWindow = new MarketWindowService(_commands);
         var handWindow = new HandWindowService(_commands, _effectManager);
         var boardWindow = new BoardWindowService(_commands);
-        _overlay = new ImGuiOverlayService(cardInteraction, marketWindow, handWindow, boardWindow, _commands);
+        var targetSelection = new TargetSelectionWindowService(_commands, _effectManager);
 
         // Initialize demo data then start game
         var cardFactory = new CardFactory(_gfx);
         var demoData = new DemoDataService(cardFactory, _gfx);
+
+        var victoryScreen = new VictoryScreenService(_commands, demoData);
+        _overlay = new ImGuiOverlayService(cardInteraction, marketWindow, handWindow, boardWindow,
+            targetSelection, victoryScreen, _commands);
+
         demoData.InitializeDemoDecks(_state);
         _state.StartGame();
     }
@@ -122,10 +127,6 @@ public class Game1 : Game
             {
                 case Main.TurnPhase.DrawPhase:
                     _turnService.ExecuteDrawPhase(_state);
-                    break;
-
-                case Main.TurnPhase.ValidatePhase when _state.AllPlayersValidated:
-                    _turnService.ExecuteResolutionPhase(_state);
                     break;
 
                 case Main.TurnPhase.ResolutionPhase:

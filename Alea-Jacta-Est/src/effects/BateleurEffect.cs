@@ -8,69 +8,79 @@ namespace Alea_Jacta_Est.Effects;
 
 /// <summary>
 /// Le Bateleur - I
-/// Endroit : Commencement, ressource, enthousiasme, énergie, motivation
-/// Envers : Malhonnêteté, violence, blocage, égoïsme, maladresse
+/// Endroit : +10 pièces, pioche 1 carte bonus, rabais aléatoire (1-2) par carte du marché.
+/// Envers   : Supprime une carte face-cachée de l'adversaire ciblé.
+///            Si la carte supprimée est arcanique, le Bateleur est également supprimé.
 /// </summary>
 public class BateleurEffect : ICardEffect
 {
-    private static readonly Random _random = new();
+    private static readonly Random _rng = new();
 
-    public int Duration => 0; // one-shot
+    public int Duration => 0;
+
+    public bool RequiresTarget(ArcanaCard card) => !card.IsUpright;
 
     public void OnPlay(GameState state, ArcanaCard card)
     {
         if (card.IsUpright)
-            ResolveEndroit(state, card);
+            ResolveEndroit(state);
         else
             ResolveEnvers(state, card);
     }
 
-    /// <summary>
-    /// Endroit : Ajoute 10 pièces, pioche une carte bonus,
-    /// et offre un rabais aléatoire (1-2 pièces) pour chaque carte dans la boutique.
-    /// </summary>
-    private void ResolveEndroit(GameState state, ArcanaCard card)
+    private static void ResolveEndroit(GameState state)
     {
-        var currentPlayer = state.CurrentPlayer;
-        if (currentPlayer == null) return;
+        var player = state.CurrentPlayer;
+        if (player == null) return;
 
-        currentPlayer.Wallet += 10;
+        // +10 pièces
+        player.Wallet += 10;
 
-        // TODO: Implémenter pioche de carte bonus depuis CardFactory
+        // Pioche 1 carte bonus depuis la pioche principale
+        var mainDeck = player.Decks["MainDeck"];
+        var hand = player.Decks["HandDeck"];
+        if (mainDeck.Cards.Count > 0)
+        {
+            var bonus = mainDeck.DrawCard();
+            if (bonus != null) hand.AddCard(bonus);
+        }
 
-        foreach (var marketCard in currentPlayer.Market.Deck.Cards)
+        // Rabais aléatoire (1-2 pièces) pour chaque carte du marché
+        foreach (var marketCard in player.Market.Deck.Cards)
         {
             int discount = Helper.RandomDiscount(1, 2);
-            currentPlayer.Market.AddFlatDiscount(discount, marketCard.Price);
+            player.Market.AddFlatDiscount(discount, marketCard.Price);
         }
     }
 
-    /// <summary>
-    /// Envers : Sélectionne une carte d'un adversaire face caché et la supprime.
-    /// Si la carte est arcanique, le Bateleur est aussi supprimé.
-    /// </summary>
-    private void ResolveEnvers(GameState state, ArcanaCard card)
+    private static void ResolveEnvers(GameState state, ArcanaCard bateleur)
     {
-        var currentPlayer = state.CurrentPlayer;
-        if (currentPlayer == null) return;
+        var target = state.PendingActivation?.SelectedTarget;
+        var activator = state.PendingActivation?.Activator ?? state.CurrentPlayer;
+        if (target == null || activator == null) return;
 
-        var opponents = state.Players.Where(p => p != currentPlayer).ToList();
-        if (opponents.Count == 0) return;
+        // Choisir un deck face-cachée (MainDeck ou SpecialDeck)
+        var faceDownDecks = new[] { "MainDeck", "SpecialDeck" }
+            .Select(k => target.Decks.TryGetValue(k, out var d) ? d : null)
+            .Where(d => d != null && d!.Cards.Count > 0)
+            .ToList();
 
-        var targetOpponent = opponents[_random.Next(opponents.Count)];
+        if (faceDownDecks.Count == 0) return;
 
-        var opponentDecks = targetOpponent.Decks.Values.Where(d => d.Cards.Count > 0).ToList();
-        if (opponentDecks.Count == 0) return;
+        var targetDeck = faceDownDecks[_rng.Next(faceDownDecks.Count)]!;
 
-        var targetDeck = opponentDecks[_random.Next(opponentDecks.Count)];
+        if (!target.Decks.ContainsKey("RemovedCards"))
+            target.Decks["RemovedCards"] = new Deck();
 
-        if (!targetOpponent.Decks.ContainsKey("RemovedCards"))
+        var removed = Helper.MoveRandomCard(targetDeck, target.Decks["RemovedCards"]);
+
+        // Si la carte supprimée est arcanique → supprimer aussi le Bateleur
+        if (removed is ArcanaCard)
         {
-            targetOpponent.Decks["RemovedCards"] = new Deck();
+            if (!activator.Decks.ContainsKey("RemovedCards"))
+                activator.Decks["RemovedCards"] = new Deck();
+            activator.Decks["ArcanaDiscardDeck"].RemoveCard(bateleur);
+            activator.Decks["RemovedCards"].AddCard(bateleur);
         }
-
-        Helper.MoveRandomCard(targetDeck, targetOpponent.Decks["RemovedCards"]);
-
-        // TODO: Vérifier si la carte est arcanique
     }
 }

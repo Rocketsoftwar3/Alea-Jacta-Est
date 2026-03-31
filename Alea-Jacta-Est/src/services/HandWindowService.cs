@@ -130,10 +130,19 @@ public class HandWindowService
 
                 ImGui.TableNextColumn();
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (CardThumbSize.Y * 0.5f - ImGui.GetFrameHeight() * 0.5f));
-                if (!isPlayPhase) ImGui.BeginDisabled();
+                int localIdx = state.Players.IndexOf(player);
+                bool arcanaLimitReached = state.TurnStates.TryGetValue(localIdx, out var lts)
+                    && lts.ArcanasPlayedThisTurn >= lts.MaxArcanasPerTurn;
+                bool arcanaDisabled = !isPlayPhase || arcanaLimitReached;
+                if (arcanaDisabled) ImGui.BeginDisabled();
                 if (ImGui.Button($"Activer##a{i}") && card is ArcanaCard activatable)
                     _commands.Enqueue(new ActivateArcanaCommand(player, activatable, null, _effectManager));
-                if (!isPlayPhase) ImGui.EndDisabled();
+                if (arcanaDisabled) ImGui.EndDisabled();
+                if (arcanaLimitReached && isPlayPhase)
+                {
+                    ImGui.SameLine();
+                    ImGui.TextDisabled("(limite)");
+                }
             }
 
             ImGui.EndTable();

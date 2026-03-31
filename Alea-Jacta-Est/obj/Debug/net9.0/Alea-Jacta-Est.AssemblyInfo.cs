@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Alea-Jacta-Est")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b67022daba2aa47fafc7ab692beee275c0c44850")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c68a06c6b0fe56512e2d0c4b990222dd9b1f5055")]
 [assembly: System.Reflection.AssemblyProductAttribute("Alea-Jacta-Est")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Alea-Jacta-Est")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

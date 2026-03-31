@@ -8,26 +8,25 @@ namespace Alea_Jacta_Est.Services;
 public class DamageCalculationService
 {
     /// <summary>
-    /// Calculates total damage from a collection of played cards.
+    /// Calculates total damage from played cards.
+    /// <paramref name="faceMultiplierBoost"/> multiplies all face-card multipliers (1f = normal, 2f = Empereur endroit).
     /// Formula per suit:
-    ///   numberedSum = Σ DamageValue of numbered ValueCards for this suit
-    ///   faceMultiplier = Π Multiplier of each face ValueCard of this suit (1.0 if none)
+    ///   numberedSum = Σ DamageValue of numbered cards for this suit
+    ///   faceMultiplier = Π (card.Multiplier × faceMultiplierBoost) for face cards of this suit
     ///   suitTotal = (int)(numberedSum × faceMultiplier)
-    /// Total = Σ suitTotal across all suits
-    /// Non-ValueCards (ArcanaCards) are ignored here — their effects are handled by EffectManager.
     /// </summary>
-    public int CalculateDamage(IEnumerable<Card> cards)
+    public int CalculateDamage(IEnumerable<Card> cards, float faceMultiplierBoost = 1f)
     {
-        return CalculateScore(cards);
+        return CalculateScore(cards, faceMultiplierBoost);
     }
 
-    /// <summary>Calculates money earned from cards remaining in hand. Same formula as damage.</summary>
+    /// <summary>Calculates money from cards remaining in hand. Same formula as damage.</summary>
     public int CalculateMoney(IEnumerable<Card> handCards)
     {
-        return CalculateScore(handCards);
+        return CalculateScore(handCards, 1f);
     }
 
-    private static int CalculateScore(IEnumerable<Card> cards)
+    private static int CalculateScore(IEnumerable<Card> cards, float faceMultiplierBoost)
     {
         var valueCards = cards.OfType<ValueCard>().ToList();
         int total = 0;
@@ -43,7 +42,7 @@ public class DamageCalculationService
 
             float faceMultiplier = suitCards
                 .Where(c => c.IsFaceCard)
-                .Aggregate(1f, (acc, c) => acc * c.Multiplier);
+                .Aggregate(1f, (acc, c) => acc * (c.Multiplier * faceMultiplierBoost));
 
             total += (int)(numberedSum * faceMultiplier);
         }

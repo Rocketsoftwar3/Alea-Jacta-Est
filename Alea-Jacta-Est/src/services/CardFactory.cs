@@ -48,6 +48,60 @@ public class CardFactory
             .Upright(isUpright);
     }
 
+    [CardCreator]
+    public static ArcanaCard.ArcanaCardBuilder CreateImperatrice(bool isUpright = true)
+    {
+        return ArcanaCard.Use(3, "L'Impératrice", new ImperatriceEffect())
+            .TextureRecto("cards/tarot_imperatrice")
+            .WithPrice(18)
+            .Upright(isUpright);
+    }
+
+    [CardCreator]
+    public static ArcanaCard.ArcanaCardBuilder CreateEmpereur(bool isUpright = true)
+    {
+        return ArcanaCard.Use(4, "L'Empereur", new EmpereurEffect())
+            .TextureRecto("cards/tarot_empereur")
+            .WithPrice(22)
+            .Upright(isUpright);
+    }
+
+    [CardCreator]
+    public static ArcanaCard.ArcanaCardBuilder CreatePape(bool isUpright = true)
+    {
+        return ArcanaCard.Use(5, "Le Pape", new PapeEffect())
+            .TextureRecto("cards/tarot_pape")
+            .WithPrice(18)
+            .Upright(isUpright);
+    }
+
+    [CardCreator]
+    public static ArcanaCard.ArcanaCardBuilder CreateAmoureux(bool isUpright = true)
+    {
+        return ArcanaCard.Use(6, "L'Amoureux", new AmoureuxEffect())
+            .TextureRecto("cards/tarot_amoureux")
+            .WithPrice(20)
+            .Upright(isUpright);
+    }
+
+    [CardCreator]
+    public static ArcanaCard.ArcanaCardBuilder CreateChariot(bool isUpright = true)
+    {
+        return ArcanaCard.Use(7, "Le Chariot", new ChariotEffect())
+            .TextureRecto("cards/tarot_chariot")
+            .WithPrice(25)
+            .Upright(isUpright);
+    }
+
+    [CardCreator]
+    public static ArcanaCard.ArcanaCardBuilder CreateMort(bool isUpright = true)
+    {
+        return ArcanaCard.Use(13, "La Mort", new MortEffect())
+            .TextureRecto("cards/tarot_mort")
+            .WithPrice(30)
+            .Upright(isUpright);
+    }
+
     public ArcanaCard.ArcanaCardBuilder CreateRandomArcanaBuilder(bool isUpright = true)
     {
         var randomMethod = _creatorMethods[_random.Next(_creatorMethods.Length)];
