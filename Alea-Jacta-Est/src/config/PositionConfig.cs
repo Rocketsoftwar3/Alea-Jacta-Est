@@ -90,90 +90,97 @@ public static class PositionConfig
         }
     }
 
-    // Local player deck positions (bottom of screen)
+    // HUD panel width in relative coords (270px / 960px reference)
+    // All card positions must be > HudLeft to avoid rendering under the HUD.
+    private const float HudLeft = 0.30f;
+
+    // Local player deck positions (bottom of screen, shifted right of HUD)
     public static class LocalPlayer
     {
-        // Draw pile (face-down, small stacked pile on the left)
+        // Draw pile (face-down, stacked — far left of content area)
         public static readonly DeckConfig MainDeck = new(
-            relativePosition: new Vector2(0.05f, 0.75f),
+            relativePosition: new Vector2(0.33f, 0.80f),
             displayMode: DeckDisplayMode.Stacked,
             isFrontVisible: false,
             baseCardScale: 0.7f,
             stackOffset: 4f
         );
 
-        // Playable hand (face-up fan, center-bottom)
-        public static readonly DeckConfig HandDeck = new(
-            relativePosition: new Vector2(0.5f, 0.75f),
-            displayMode: DeckDisplayMode.FanUp,
-            isFrontVisible: true,
-            baseCardScale: 0.7f,
-            fanSpreadDegrees: 85f,
-            fanRadius: 380f
+        // Arcana draw pile (face-down)
+        public static readonly DeckConfig SpecialDeck = new(
+            relativePosition: new Vector2(0.38f, 0.82f),
+            displayMode: DeckDisplayMode.Stacked,
+            isFrontVisible: false,
+            baseCardScale: 0.9f,
+            stackOffset: 20f
         );
 
-        // Arcana hand card (face-up stacked, next to SpecialDeck)
+        // Arcana hand (face-up, left of center)
         public static readonly DeckConfig ArcanaHandDeck = new(
-            relativePosition: new Vector2(0.17f, 0.72f),
+            relativePosition: new Vector2(0.44f, 0.78f),
             displayMode: DeckDisplayMode.Stacked,
             isFrontVisible: true,
             baseCardScale: 0.9f,
             stackOffset: 4f
+        );
+
+        // Playable hand — fan centered in content area (x=0.63 keeps all cards right of HUD)
+        public static readonly DeckConfig HandDeck = new(
+            relativePosition: new Vector2(0.63f, 0.80f),
+            displayMode: DeckDisplayMode.FanUp,
+            isFrontVisible: true,
+            baseCardScale: 0.7f,
+            fanSpreadDegrees: 75f,
+            fanRadius: 290f
         );
 
         // Arcana discard (face-down, far right)
         public static readonly DeckConfig ArcanaDiscardDeck = new(
-            relativePosition: new Vector2(0.95f, 0.72f),
+            relativePosition: new Vector2(0.93f, 0.82f),
             displayMode: DeckDisplayMode.Stacked,
             isFrontVisible: false,
             baseCardScale: 0.9f,
             stackOffset: 4f
         );
 
-        public static readonly DeckConfig SpecialDeck = new(
-            relativePosition: new Vector2(0.125f, 0.72f),
-            displayMode: DeckDisplayMode.Stacked,
-            isFrontVisible: false,
-            baseCardScale: 0.9f,
-            stackOffset: 20f
-        );
-
+        // Value discard (face-up, right side)
         public static readonly DeckConfig DiscardDeck = new(
-            relativePosition: new Vector2(0.875f, 0.72f),
+            relativePosition: new Vector2(0.88f, 0.80f),
             displayMode: DeckDisplayMode.Stacked,
             isFrontVisible: true,
             baseCardScale: 0.9f,
             stackOffset: 20f
         );
 
-        private const float BoardDecksHeight = 0.5f;
-        private const float BoardDecksBaseCardScale = 0.5f;
+        // Board decks — spread around center of content area at mid-height
+        private const float BoardDecksY = 0.52f;
+        private const float BoardDecksBaseCardScale = 0.55f;
 
         public static readonly DeckConfig[] BoardDecks =
         {
             new DeckConfig(
-                relativePosition: new Vector2(0.4f, BoardDecksHeight),
+                relativePosition: new Vector2(0.50f, BoardDecksY),
                 displayMode: DeckDisplayMode.Stacked,
                 isFrontVisible: true,
                 baseCardScale: BoardDecksBaseCardScale,
                 stackOffset: 10f
             ),
             new DeckConfig(
-                relativePosition: new Vector2(0.4666667f, BoardDecksHeight),
+                relativePosition: new Vector2(0.57f, BoardDecksY),
                 displayMode: DeckDisplayMode.Stacked,
                 isFrontVisible: true,
                 baseCardScale: BoardDecksBaseCardScale,
                 stackOffset: 10f
             ),
             new DeckConfig(
-                relativePosition: new Vector2(0.5333334f, BoardDecksHeight),
+                relativePosition: new Vector2(0.64f, BoardDecksY),
                 displayMode: DeckDisplayMode.Stacked,
                 isFrontVisible: true,
                 baseCardScale: BoardDecksBaseCardScale,
                 stackOffset: 10f
             ),
             new DeckConfig(
-                relativePosition: new Vector2(0.6f, BoardDecksHeight),
+                relativePosition: new Vector2(0.71f, BoardDecksY),
                 displayMode: DeckDisplayMode.Stacked,
                 isFrontVisible: true,
                 baseCardScale: BoardDecksBaseCardScale,
@@ -184,60 +191,43 @@ public static class PositionConfig
 
     public static class Opponents
     {
-        // Returns config for opponent at given index (0-3)
-        public static DeckConfig GetMainDeck(int opponentIndex)
-        {
-            float[] xPositions = { 0.15f, 0.35f, 0.65f, 0.85f };
-            return new DeckConfig(
-                relativePosition: new Vector2(xPositions[opponentIndex], 0.15f),
-                displayMode: DeckDisplayMode.FanDown,
-                isFrontVisible: false,
-                baseCardScale: 0.3f,
-                fanSpreadDegrees: 40f,
-                fanRadius: 60f
-            );
-        }
+        // 4 opponents evenly distributed in the content area (right of HUD)
+        // Content area: ~0.30 to ~0.97  →  centers at 0.38, 0.55, 0.72, 0.89
+        private static readonly float[] MainX    = { 0.38f, 0.55f, 0.72f, 0.89f };
+        private static readonly float[] SpecialX = { 0.32f, 0.49f, 0.66f, 0.83f };
+        private static readonly float[] DiscardX = { 0.44f, 0.61f, 0.78f, 0.95f };
 
-        public static DeckConfig GetSpecialDeck(int opponentIndex)
-        {
-            float[] xPositions = { 0.09f, 0.29f, 0.59f, 0.79f };
-            return new DeckConfig(
-                relativePosition: new Vector2(xPositions[opponentIndex], 0.1f),
-                displayMode: DeckDisplayMode.Stacked,
-                isFrontVisible: false,
-                baseCardScale: 0.3f,
-                stackOffset: 10f
-            );
-        }
+        public static DeckConfig GetMainDeck(int opponentIndex) => new(
+            relativePosition: new Vector2(MainX[opponentIndex], 0.15f),
+            displayMode: DeckDisplayMode.FanDown,
+            isFrontVisible: false,
+            baseCardScale: 0.3f,
+            fanSpreadDegrees: 40f,
+            fanRadius: 60f
+        );
 
-        public static DeckConfig GetDiscardDeck(int opponentIndex)
-        {
-            float[] xPositions = { 0.21f, 0.41f, 0.71f, 0.91f };
-            return new DeckConfig(
-                relativePosition: new Vector2(xPositions[opponentIndex], 0.1f),
-                displayMode: DeckDisplayMode.Stacked,
-                isFrontVisible: false,
-                baseCardScale: 0.3f,
-                stackOffset: 10f
-            );
-        }
+        public static DeckConfig GetSpecialDeck(int opponentIndex) => new(
+            relativePosition: new Vector2(SpecialX[opponentIndex], 0.10f),
+            displayMode: DeckDisplayMode.Stacked,
+            isFrontVisible: false,
+            baseCardScale: 0.3f,
+            stackOffset: 10f
+        );
+
+        public static DeckConfig GetDiscardDeck(int opponentIndex) => new(
+            relativePosition: new Vector2(DiscardX[opponentIndex], 0.10f),
+            displayMode: DeckDisplayMode.Stacked,
+            isFrontVisible: false,
+            baseCardScale: 0.3f,
+            stackOffset: 10f
+        );
 
         public static DeckConfig GetBoardDeck(int opponentIndex, int boardDeckIndex)
         {
-            // Compact board decks for opponents
-            float baseX = opponentIndex switch
-            {
-                0 => 0.15f,
-                1 => 0.35f,
-                2 => 0.65f,
-                3 => 0.85f,
-                _ => 0.5f
-            };
-
-            float xOffset = (boardDeckIndex - 1.5f) * 0.04f;
-
+            float baseX = MainX[opponentIndex < MainX.Length ? opponentIndex : 0];
+            float xOffset = (boardDeckIndex - 1.5f) * 0.035f;
             return new DeckConfig(
-                relativePosition: new Vector2(baseX + xOffset, 0.28f),
+                relativePosition: new Vector2(baseX + xOffset, 0.27f),
                 displayMode: DeckDisplayMode.Stacked,
                 isFrontVisible: false,
                 baseCardScale: 0.3f,

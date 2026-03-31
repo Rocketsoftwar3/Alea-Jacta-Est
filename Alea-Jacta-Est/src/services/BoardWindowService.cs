@@ -12,10 +12,12 @@ public class BoardWindowService
     private static readonly Vector2 CardThumbSize = new(36, 60);
 
     private readonly CommandQueue _commands;
+    private readonly DamageCalculationService _damageCalc;
 
-    public BoardWindowService(CommandQueue commands)
+    public BoardWindowService(CommandQueue commands, DamageCalculationService damageCalc)
     {
         _commands = commands;
+        _damageCalc = damageCalc;
     }
 
     public void Render(GameState state, ImGuiRenderer imGuiRenderer)
@@ -86,6 +88,16 @@ public class BoardWindowService
             }
 
             ImGui.EndTable();
+        }
+
+        // Damage total footer
+        if (isPlayPhase && board.Cards.Count > 0)
+        {
+            int localIdx = state.Players.IndexOf(player);
+            float boost = state.TurnStates.TryGetValue(localIdx, out var ts) && ts.MultiplierDoubled ? 2f : 1f;
+            int total = _damageCalc.CalculateDamage(board.Cards, boost);
+            ImGui.Separator();
+            ImGui.TextColored(new Vector4(1f, 0.4f, 0.3f, 1f), $"⚔  Total : {total} dégâts");
         }
 
         ImGui.End();

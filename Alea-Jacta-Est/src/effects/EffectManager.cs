@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Events;
 using Alea_Jacta_Est.Main;
@@ -27,6 +28,9 @@ public class EffectManager
             _events.Publish(new EffectApplied(card, effect));
         }
     }
+
+    public IReadOnlyList<(string Name, int RemainingTurns)> GetActiveEffectSummary()
+        => _active.Select(a => (a.Card.ArcanaName, a.RemainingTurns)).ToList();
 
     public void OnTurnStart(GameState state)
     {

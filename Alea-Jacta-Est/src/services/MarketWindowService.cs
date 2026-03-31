@@ -103,13 +103,13 @@ public class MarketWindowService
                     ImGui.TextDisabled($"(base : {card.Price})");
                 }
 
-                // Col 2 — price
+                // Col 2 — price (green if affordable, red if not)
                 ImGui.TableNextColumn();
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (CardThumbSize.Y * 0.5f - ImGui.GetTextLineHeight() * 0.5f));
                 if (canAfford)
-                    ImGui.TextUnformatted($"{price}");
+                    ImGui.TextColored(new Vector4(0.3f, 0.95f, 0.4f, 1f), $"{price}");
                 else
-                    ImGui.TextDisabled($"{price}");
+                    ImGui.TextColored(new Vector4(0.95f, 0.3f, 0.3f, 1f), $"{price}");
 
                 // Col 3 — buy button
                 ImGui.TableNextColumn();

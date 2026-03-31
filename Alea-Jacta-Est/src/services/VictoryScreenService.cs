@@ -21,6 +21,12 @@ public class VictoryScreenService
         if (state.Phase != GamePhase.Finished) return;
 
         var io = ImGui.GetIO();
+
+        // Dim the whole screen behind the results window
+        var dl = ImGui.GetBackgroundDrawList();
+        dl.AddRectFilled(Vector2.Zero, io.DisplaySize,
+            ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.65f)));
+
         var windowSize = new Vector2(420, 300);
         var center = new Vector2((io.DisplaySize.X - windowSize.X) * 0.5f, (io.DisplaySize.Y - windowSize.Y) * 0.5f);
 

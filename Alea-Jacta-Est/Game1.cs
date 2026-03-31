@@ -94,17 +94,14 @@ public class Game1 : Game
 
         var cardInteraction = new CardInteractionService(deckRenderer, _commands, _effectManager);
         var marketWindow = new MarketWindowService(_commands);
-        var handWindow = new HandWindowService(_commands, _effectManager);
-        var boardWindow = new BoardWindowService(_commands);
-        var targetSelection = new TargetSelectionWindowService(_commands, _effectManager);
+        var hud = new HUDService(_commands, _effectManager, _damageCalc);
 
         // Initialize demo data then start game
         var cardFactory = new CardFactory(_gfx);
         var demoData = new DemoDataService(cardFactory, _gfx);
 
         var victoryScreen = new VictoryScreenService(_commands, demoData);
-        _overlay = new ImGuiOverlayService(cardInteraction, marketWindow, handWindow, boardWindow,
-            targetSelection, victoryScreen, _commands);
+        _overlay = new ImGuiOverlayService(cardInteraction, hud, marketWindow, victoryScreen);
 
         demoData.InitializeDemoDecks(_state);
         _state.StartGame();
