@@ -185,6 +185,27 @@ public class CardFactory
                 };
                 return epeePrefix != null ? $"cards/sword/{epeePrefix}Epee" : null;
 
+            case CardSuit.Denier:
+                string? denierPrefix = rank switch
+                {
+                    CardRank.Un       => "1",
+                    CardRank.Deux     => "2",
+                    CardRank.Trois    => "3",
+                    CardRank.Quatre   => "4",
+                    CardRank.Cinq     => "5",
+                    CardRank.Six      => "6",
+                    CardRank.Sept     => "7",
+                    CardRank.Huit     => "8",
+                    CardRank.Neuf     => "9",
+                    CardRank.Dix      => "10",
+                    CardRank.Valet    => "valet",
+                    CardRank.Cavalier => "chevalier",
+                    CardRank.Reine    => "reine",
+                    CardRank.Roi      => "roi",
+                    _                 => null
+                };
+                return denierPrefix != null ? $"cards/coin/{denierPrefix}Denier" : null;
+
             default:
                 return null;
         }
