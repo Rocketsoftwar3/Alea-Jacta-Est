@@ -5,7 +5,6 @@ using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
 using Alea_Jacta_Est.Rendering;
 using Alea_Jacta_Est.Services;
-using Alea_Jacta_Est.Config;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -42,8 +41,8 @@ public class Game1 : Game
         Window.AllowUserResizing = true;
         Window.ClientSizeChanged += OnClientSizeChanged;
 
-        _graphics.PreferredBackBufferWidth = PositionConfig.ReferenceWidth;
-        _graphics.PreferredBackBufferHeight = PositionConfig.ReferenceHeight;
+        _graphics.PreferredBackBufferWidth  = 1280;
+        _graphics.PreferredBackBufferHeight = 720;
         _graphics.ApplyChanges();
     }
 
@@ -62,7 +61,7 @@ public class Game1 : Game
         if (_isResizing) return;
         _isResizing = true;
 
-        _graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+        _graphics.PreferredBackBufferWidth  = Window.ClientBounds.Width;
         _graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
         _graphics.ApplyChanges();
 
@@ -73,35 +72,29 @@ public class Game1 : Game
 
     protected override void LoadContent()
     {
-        var spriteBatch = new SpriteBatch(GraphicsDevice);
+        var spriteBatch      = new SpriteBatch(GraphicsDevice);
+        var backgroundTex    = Content.Load<Texture2D>("main_background");
+        var cardRectoTex     = Content.Load<Texture2D>("card_recto_placeholder");
+        var cardVersoTex     = Content.Load<Texture2D>("cards/tarot_dos");
+        var goldCoinTex      = Content.Load<Texture2D>("goldcoin");
 
-        var backgroundTexture = Content.Load<Texture2D>("main_background");
-        var cardRectoTexture = Content.Load<Texture2D>("card_recto_placeholder");
-        var cardVersoTexture = Content.Load<Texture2D>("cards/tarot_dos");
-
-        // Core state
-        _state = new GameState("LocalPlayer");
-        _gfx = new GraphicsResources(spriteBatch, GraphicsDevice, Content, backgroundTexture, cardRectoTexture, cardVersoTexture);
+        _state    = new GameState("LocalPlayer");
+        _gfx      = new GraphicsResources(spriteBatch, GraphicsDevice, Content, backgroundTex, cardRectoTex, cardVersoTex, goldCoinTex);
         _eventBus = new EventBus();
         _commands = new CommandQueue();
 
-        // Services (manual DI)
-        var deckRenderer = new DeckRenderer();
-        _gameRenderer = new GameRenderer(_gfx, deckRenderer);
+        _gameRenderer  = new GameRenderer(_gfx);
         _effectManager = new EffectManager(_eventBus);
-        _damageCalc = new DamageCalculationService();
-        _turnService = new TurnService(_effectManager, _damageCalc, _eventBus);
+        _damageCalc    = new DamageCalculationService();
+        _turnService   = new TurnService(_effectManager, _damageCalc, _eventBus);
 
-        var cardInteraction = new CardInteractionService(deckRenderer, _commands, _effectManager);
-        var marketWindow = new MarketWindowService(_commands);
-        var hud = new HUDService(_commands, _effectManager, _damageCalc);
-
-        // Initialize demo data then start game
-        var cardFactory = new CardFactory(_gfx);
-        var demoData = new DemoDataService(cardFactory, _gfx);
-
+        var cardFactory   = new CardFactory(_gfx);
+        var demoData      = new DemoDataService(cardFactory, _gfx);
+        var marketWindow  = new MarketWindowService(_commands);
         var victoryScreen = new VictoryScreenService(_commands, demoData);
-        _overlay = new ImGuiOverlayService(cardInteraction, hud, marketWindow, victoryScreen);
+        var gameTable     = new GameTableService(_commands, _effectManager, _damageCalc);
+
+        _overlay = new ImGuiOverlayService(gameTable, marketWindow, victoryScreen);
 
         demoData.InitializeDemoDecks(_state);
         _state.StartGame();
@@ -114,10 +107,8 @@ public class Game1 : Game
         if (_inputService.IsExitRequested())
             Exit();
 
-        // Execute all commands queued during previous frame's render
         _commands.ExecuteAll(_state, _eventBus);
 
-        // Auto-trigger phases that execute without player input
         if (_state.Phase == Main.GamePhase.InProgress)
         {
             switch (_state.CurrentTurnPhase)
@@ -125,11 +116,9 @@ public class Game1 : Game
                 case Main.TurnPhase.DrawPhase:
                     _turnService.ExecuteDrawPhase(_state);
                     break;
-
                 case Main.TurnPhase.ResolutionPhase:
                     _turnService.ExecuteResolutionPhase(_state);
                     break;
-
                 case Main.TurnPhase.CleanupPhase:
                     _turnService.ExecuteCleanupPhase(_state);
                     break;

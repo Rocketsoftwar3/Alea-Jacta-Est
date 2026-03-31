@@ -37,8 +37,8 @@ public class VictoryScreenService
             ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize |
             ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoTitleBar);
 
-        ImGui.SetCursorPosX((windowSize.X - ImGui.CalcTextSize("★  RÉSULTATS  ★").X) * 0.5f);
-        ImGui.TextColored(new Vector4(1f, 0.85f, 0.1f, 1f), "★  RÉSULTATS  ★");
+        ImGui.SetCursorPosX((windowSize.X - ImGui.CalcTextSize("=== RESULTATS ===").X) * 0.5f);
+        ImGui.TextColored(new Vector4(1f, 0.85f, 0.1f, 1f), "=== RESULTATS ===");
         ImGui.Separator();
         ImGui.Spacing();
 
@@ -58,7 +58,7 @@ public class VictoryScreenService
             ImGui.TextColored(color, rank);
             ImGui.SameLine();
             string alive = player.Health > 0 ? "" : " (éliminé)";
-            ImGui.TextUnformatted($"  {player.Name}{alive}  —  {damage} dégâts infligés");
+            ImGui.TextUnformatted($"  {player.Name}{alive}  -  {damage} degats infliges");
         }
 
         ImGui.Spacing();

@@ -42,7 +42,7 @@ public class MarketWindowService
         ImGui.TextColored(isShopPhase
             ? new Vector4(1f, 0.7f, 0.3f, 1f)
             : new Vector4(0.7f, 0.7f, 0.7f, 1f),
-            isShopPhase ? "Phase Boutique — Achats/Ventes disponibles" : "Hors boutique — Achat uniquement");
+            isShopPhase ? "Phase Boutique - Achats/Ventes disponibles" : "Hors boutique - Achat uniquement");
 
         // ── Header ────────────────────────────────────────────────────────────
         ImGui.TextUnformatted($"Portefeuille : {player.Wallet} pièces");
