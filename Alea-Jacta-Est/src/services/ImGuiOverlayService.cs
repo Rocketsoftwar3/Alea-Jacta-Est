@@ -1,8 +1,9 @@
 using System.Numerics;
+using ImGuiNET;
+using Alea_Jacta_Est.Commands;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
-using ImGuiNET;
 
 namespace Alea_Jacta_Est.Services;
 
@@ -12,11 +13,22 @@ public class ImGuiOverlayService
 
     private readonly CardInteractionService _cardInteraction;
     private readonly MarketWindowService _marketWindow;
+    private readonly HandWindowService _handWindow;
+    private readonly BoardWindowService _boardWindow;
+    private readonly CommandQueue _commands;
 
-    public ImGuiOverlayService(CardInteractionService cardInteraction, MarketWindowService marketWindow)
+    public ImGuiOverlayService(
+        CardInteractionService cardInteraction,
+        MarketWindowService marketWindow,
+        HandWindowService handWindow,
+        BoardWindowService boardWindow,
+        CommandQueue commands)
     {
         _cardInteraction = cardInteraction;
         _marketWindow = marketWindow;
+        _handWindow = handWindow;
+        _boardWindow = boardWindow;
+        _commands = commands;
     }
 
     public void Render(GameState state, GraphicsResources gfx, ImGuiRenderer imGuiRenderer)
@@ -25,28 +37,60 @@ public class ImGuiOverlayService
 
         RenderGameStatePanel(state);
         RenderPlayersPanel(state);
+        _handWindow.Render(state, imGuiRenderer);
+        _boardWindow.Render(state, imGuiRenderer);
         _marketWindow.Render(state, imGuiRenderer, ref _marketOpen);
     }
 
     private void RenderGameStatePanel(GameState state)
     {
         ImGui.SetNextWindowPos(new Vector2(10, 10), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSize(new Vector2(220, 140), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(new Vector2(240, 200), ImGuiCond.FirstUseEver);
         ImGui.Begin("Partie");
 
         var stateLabel = state.Phase switch
         {
             GamePhase.WaitingForPlayers => "En attente",
             GamePhase.InProgress        => "En cours",
-            GamePhase.Finished          => "Terminee",
+            GamePhase.Finished          => "Terminée",
             _                           => "?"
         };
-        ImGui.Text($"Etat      : {stateLabel}");
+        ImGui.Text($"État      : {stateLabel}");
         ImGui.Text($"Tour      : {state.CurrentTurn}");
-        ImGui.Text($"Joueurs   : {state.Players.Count} / {GameState.MaxPlayers}");
 
-        var current = state.CurrentPlayer;
-        ImGui.Text($"Au tour de: {(current != null ? current.Name : "-")}");
+        // Phase indicator with color
+        var (phaseLabel, phaseColor) = state.CurrentTurnPhase switch
+        {
+            TurnPhase.DrawPhase       => ("Pioche",     new Vector4(0.5f, 0.8f, 1f, 1f)),
+            TurnPhase.PlayPhase       => ("Jeu",        new Vector4(0.3f, 1f, 0.3f, 1f)),
+            TurnPhase.ValidatePhase   => ("Validation", new Vector4(1f, 0.9f, 0.2f, 1f)),
+            TurnPhase.ResolutionPhase => ("Résolution", new Vector4(1f, 0.4f, 0.4f, 1f)),
+            TurnPhase.CleanupPhase    => ("Nettoyage",  new Vector4(0.8f, 0.5f, 1f, 1f)),
+            TurnPhase.ShopPhase       => ("Boutique",   new Vector4(1f, 0.7f, 0.3f, 1f)),
+            _                         => ("?",          new Vector4(1f, 1f, 1f, 1f))
+        };
+        ImGui.Text("Phase     : ");
+        ImGui.SameLine();
+        ImGui.TextColored(phaseColor, phaseLabel);
+
+        ImGui.Separator();
+
+        // Validate turn button (PlayPhase only)
+        bool isPlayPhase = state.CurrentTurnPhase == TurnPhase.PlayPhase;
+        int localIndex = state.Players.IndexOf(state.LocalPlayer);
+        bool alreadyValidated = state.TurnStates.TryGetValue(localIndex, out var ts) && ts.HasValidated;
+
+        if (!isPlayPhase || alreadyValidated) ImGui.BeginDisabled();
+        if (ImGui.Button("Valider le tour") && isPlayPhase && !alreadyValidated)
+            _commands.Enqueue(new ValidateTurnCommand(localIndex));
+        if (!isPlayPhase || alreadyValidated) ImGui.EndDisabled();
+
+        // End shop button (ShopPhase only)
+        bool isShopPhase = state.CurrentTurnPhase == TurnPhase.ShopPhase;
+        if (!isShopPhase) ImGui.BeginDisabled();
+        if (ImGui.Button("Fin de boutique"))
+            _commands.Enqueue(new EndShopPhaseCommand());
+        if (!isShopPhase) ImGui.EndDisabled();
 
         ImGui.Separator();
         string marketLabel = _marketOpen ? "Fermer Marché" : "Ouvrir Marché";
@@ -58,7 +102,7 @@ public class ImGuiOverlayService
 
     private void RenderPlayersPanel(GameState state)
     {
-        ImGui.SetNextWindowPos(new Vector2(10, 160), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowPos(new Vector2(10, 220), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSize(new Vector2(280, 300), ImGuiCond.FirstUseEver);
         ImGui.Begin("Joueurs");
 
@@ -71,13 +115,20 @@ public class ImGuiOverlayService
             {
                 ImGui.Indent();
 
-                ImGui.Text($"Pieces    : {player.Wallet}");
+                ImGui.Text($"PV        : {player.Health}");
+                ImGui.Text($"Pièces    : {player.Wallet}");
                 ImGui.Text($"Remise    : {player.Market.Discount * 100:F0}%%");
                 ImGui.Separator();
 
-                foreach (var (deckName, deck) in player.Decks)
+                // Show relevant decks only
+                var decksToShow = isLocal
+                    ? new[] { "MainDeck", "HandDeck", "BoardDeck0", "DiscardDeck", "SpecialDeck", "ArcanaHandDeck", "ArcanaDiscardDeck" }
+                    : new[] { "MainDeck", "SpecialDeck" };
+
+                foreach (var deckName in decksToShow)
                 {
-                    ImGui.Text($"{deckName,-14}: {deck.Cards.Count} carte(s)");
+                    if (player.Decks.TryGetValue(deckName, out var deck))
+                        ImGui.Text($"{deckName,-20}: {deck.Cards.Count}");
                 }
 
                 ImGui.Unindent();

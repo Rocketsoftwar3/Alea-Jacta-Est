@@ -27,6 +27,8 @@ public class Game1 : Game
     private GameRenderer _gameRenderer;
     private ImGuiOverlayService _overlay;
     private EffectManager _effectManager;
+    private TurnService _turnService;
+    private DamageCalculationService _damageCalc;
 
     private bool _isResizing;
 
@@ -83,19 +85,24 @@ public class Game1 : Game
         _eventBus = new EventBus();
         _commands = new CommandQueue();
 
-        // Services (DI manuelle)
+        // Services (manual DI)
         var deckRenderer = new DeckRenderer();
         _gameRenderer = new GameRenderer(_gfx, deckRenderer);
         _effectManager = new EffectManager(_eventBus);
+        _damageCalc = new DamageCalculationService();
+        _turnService = new TurnService(_effectManager, _damageCalc, _eventBus);
 
-        var cardInteraction = new CardInteractionService(deckRenderer, _commands);
+        var cardInteraction = new CardInteractionService(deckRenderer, _commands, _effectManager);
         var marketWindow = new MarketWindowService(_commands);
-        _overlay = new ImGuiOverlayService(cardInteraction, marketWindow);
+        var handWindow = new HandWindowService(_commands, _effectManager);
+        var boardWindow = new BoardWindowService(_commands);
+        _overlay = new ImGuiOverlayService(cardInteraction, marketWindow, handWindow, boardWindow, _commands);
 
-        // Initialize demo data
+        // Initialize demo data then start game
         var cardFactory = new CardFactory(_gfx);
         var demoData = new DemoDataService(cardFactory, _gfx);
         demoData.InitializeDemoDecks(_state);
+        _state.StartGame();
     }
 
     protected override void Update(GameTime gameTime)
@@ -107,6 +114,29 @@ public class Game1 : Game
 
         // Execute all commands queued during previous frame's render
         _commands.ExecuteAll(_state, _eventBus);
+
+        // Auto-trigger phases that execute without player input
+        if (_state.Phase == Main.GamePhase.InProgress)
+        {
+            switch (_state.CurrentTurnPhase)
+            {
+                case Main.TurnPhase.DrawPhase:
+                    _turnService.ExecuteDrawPhase(_state);
+                    break;
+
+                case Main.TurnPhase.ValidatePhase when _state.AllPlayersValidated:
+                    _turnService.ExecuteResolutionPhase(_state);
+                    break;
+
+                case Main.TurnPhase.ResolutionPhase:
+                    _turnService.ExecuteResolutionPhase(_state);
+                    break;
+
+                case Main.TurnPhase.CleanupPhase:
+                    _turnService.ExecuteCleanupPhase(_state);
+                    break;
+            }
+        }
 
         base.Update(gameTime);
     }

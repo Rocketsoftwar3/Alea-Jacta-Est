@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using ImGuiNET;
@@ -35,6 +36,13 @@ public class MarketWindowService
             ImGui.End();
             return;
         }
+
+        // ── Phase indicator ───────────────────────────────────────────────────
+        bool isShopPhase = state.CurrentTurnPhase == TurnPhase.ShopPhase;
+        ImGui.TextColored(isShopPhase
+            ? new Vector4(1f, 0.7f, 0.3f, 1f)
+            : new Vector4(0.7f, 0.7f, 0.7f, 1f),
+            isShopPhase ? "Phase Boutique — Achats/Ventes disponibles" : "Hors boutique — Achat uniquement");
 
         // ── Header ────────────────────────────────────────────────────────────
         ImGui.TextUnformatted($"Portefeuille : {player.Wallet} pièces");
@@ -122,6 +130,79 @@ public class MarketWindowService
             }
 
             ImGui.EndTable();
+        }
+
+        // ── Sell section (ShopPhase only) ────────────────────────────────────
+        if (isShopPhase)
+        {
+            ImGui.Separator();
+            int localIndex = state.Players.IndexOf(player);
+            bool hasSold = state.TurnStates.TryGetValue(localIndex, out var turnState) && turnState.HasSoldThisRound;
+
+            ImGui.TextUnformatted("Vendre une carte :");
+            if (hasSold) ImGui.TextDisabled("(déjà vendu ce tour)");
+
+            var sellableSources = new List<(string Label, Deck Deck)>
+            {
+                ("Pioche",           player.Decks["MainDeck"]),
+                ("Défausse",         player.Decks["DiscardDeck"]),
+                ("Pioche Arcanique", player.Decks["SpecialDeck"]),
+                ("Défausse Arc.",    player.Decks["ArcanaDiscardDeck"]),
+            };
+
+            var sellFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg
+                          | ImGuiTableFlags.ScrollY | ImGuiTableFlags.SizingFixedFit;
+
+            if (ImGui.BeginTable("sell_table", 3, sellFlags, new Vector2(0, 180)))
+            {
+                ImGui.TableSetupScrollFreeze(0, 1);
+                ImGui.TableSetupColumn("",       ImGuiTableColumnFlags.WidthFixed,   CardThumbSize.X + 4);
+                ImGui.TableSetupColumn("Carte",  ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("",       ImGuiTableColumnFlags.WidthFixed, 68);
+                ImGui.TableHeadersRow();
+
+                Card? cardToSell = null;
+                Deck? sellDeck = null;
+
+                foreach (var (sourceLabel, deck) in sellableSources)
+                {
+                    foreach (var card in deck.Cards)
+                    {
+                        ImGui.TableNextRow(ImGuiTableRowFlags.None, CardThumbSize.Y + 4);
+
+                        ImGui.TableNextColumn();
+                        var texId = imGuiRenderer.GetOrBindTexture(card.TextureRecto);
+                        ImGui.Image(texId, CardThumbSize);
+
+                        ImGui.TableNextColumn();
+                        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (CardThumbSize.Y * 0.5f - ImGui.GetTextLineHeight() * 0.5f));
+                        string cardName = card is ValueCard vc ? vc.DisplayName
+                            : card is ArcanaCard ac ? ac.ArcanaName
+                            : FormatTextureName(card.TextureRecto.Name);
+                        ImGui.TextUnformatted(cardName);
+                        ImGui.TextDisabled(sourceLabel);
+
+                        ImGui.TableNextColumn();
+                        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (CardThumbSize.Y * 0.5f - ImGui.GetFrameHeight() * 0.5f));
+
+                        if (hasSold || card.Price == 0) ImGui.BeginDisabled();
+                        if (ImGui.Button($"Vendre {card.Price}##s{card.GetHashCode()}"))
+                        {
+                            cardToSell = card;
+                            sellDeck = deck;
+                        }
+                        if (hasSold || card.Price == 0) ImGui.EndDisabled();
+                    }
+                }
+
+                if (cardToSell != null && sellDeck != null)
+                {
+                    int localIdx = state.Players.IndexOf(player);
+                    _commands.Enqueue(new SellCardCommand(player, cardToSell, sellDeck, localIdx));
+                }
+
+                ImGui.EndTable();
+            }
         }
 
         ImGui.End();

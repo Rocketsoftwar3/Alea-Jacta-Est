@@ -3,6 +3,7 @@ using System.Numerics;
 using ImGuiNET;
 using Alea_Jacta_Est.Commands;
 using Alea_Jacta_Est.Config;
+using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
@@ -30,11 +31,13 @@ public class CardInteractionService
 
     private readonly DeckRenderer _deckRenderer;
     private readonly CommandQueue _commands;
+    private readonly EffectManager _effectManager;
 
-    public CardInteractionService(DeckRenderer deckRenderer, CommandQueue commands)
+    public CardInteractionService(DeckRenderer deckRenderer, CommandQueue commands, EffectManager effectManager)
     {
         _deckRenderer = deckRenderer;
         _commands = commands;
+        _effectManager = effectManager;
     }
 
     public void Render(GameState state, GraphicsResources gfx, ImGuiRenderer imGuiRenderer)
@@ -126,11 +129,27 @@ public class CardInteractionService
                     }
                     ImGui.EndTooltip();
 
-                    // ── Click → emit command ────────────────────────────────────
+                    // ── Click → emit command (context-sensitive) ─────────────
                     if (leftClicked)
                     {
-                        _commands.Enqueue(new FlipCardCommand(info.Card));
                         leftClicked = false;
+                        var localPlayer = state.LocalPlayer;
+
+                        if (state.CurrentTurnPhase == TurnPhase.PlayPhase)
+                        {
+                            if (deckType == DeckType.HandDeck && info.Card is ValueCard clickedValue)
+                                _commands.Enqueue(new PlayCardCommand(localPlayer, clickedValue));
+                            else if (deckType == DeckType.BoardDeck0 && info.Card is ValueCard boardValue)
+                                _commands.Enqueue(new TakeBackCardCommand(localPlayer, boardValue));
+                            else if (deckType == DeckType.ArcanaHandDeck && info.Card is ArcanaCard arcana)
+                                _commands.Enqueue(new ActivateArcanaCommand(localPlayer, arcana, null, _effectManager));
+                            else
+                                _commands.Enqueue(new FlipCardCommand(info.Card));
+                        }
+                        else
+                        {
+                            _commands.Enqueue(new FlipCardCommand(info.Card));
+                        }
                     }
                 }
             }
