@@ -39,19 +39,18 @@ public class GameRenderer
 
     private void DrawPlayerDecks(Player player)
     {
-        DrawDeck(player, DeckType.MainDeck);
-        DrawDeck(player, DeckType.SpecialDeck);
-        DrawDeck(player, DeckType.DiscardDeck);
-        DrawDeck(player, DeckType.BoardDeck0);
-        DrawDeck(player, DeckType.BoardDeck1);
-        DrawDeck(player, DeckType.BoardDeck2);
-        DrawDeck(player, DeckType.BoardDeck3);
+        foreach (DeckType deckType in System.Enum.GetValues<DeckType>())
+            DrawDeck(player, deckType);
     }
 
     private void DrawDeck(Player player, DeckType deckType)
     {
-        var deck = PositionConfig.GetDeck(player, deckType);
         var config = PositionConfig.GetDeckConfig(player, deckType);
+        if (config == null) return; // No visual config → skip
+
+        var deck = PositionConfig.GetDeck(player, deckType);
+        if (deck.Cards.Count == 0) return; // Empty deck → skip
+
         float scale = _gfx.Viewport.Scale;
 
         _deckRenderer.Draw(

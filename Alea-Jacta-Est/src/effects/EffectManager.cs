@@ -15,7 +15,7 @@ public class EffectManager
         _events = events;
     }
 
-    public void PlayCard(GameState state, Card card)
+    public void PlayCard(GameState state, ArcanaCard card)
     {
         foreach (var effect in card.Effects)
         {
@@ -53,11 +53,11 @@ public class EffectManager
 
     private class ActiveEffect
     {
-        public Card Card { get; }
+        public ArcanaCard Card { get; }
         public ICardEffect Effect { get; }
         public int RemainingTurns { get; set; }
 
-        public ActiveEffect(Card card, ICardEffect effect, int duration)
+        public ActiveEffect(ArcanaCard card, ICardEffect effect, int duration)
         {
             Card = card;
             Effect = effect;

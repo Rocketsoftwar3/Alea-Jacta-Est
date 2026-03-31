@@ -9,5 +9,8 @@ public enum DeckType
     BoardDeck0,
     BoardDeck1,
     BoardDeck2,
-    BoardDeck3
+    BoardDeck3,
+    HandDeck,
+    ArcanaHandDeck,
+    ArcanaDiscardDeck
 }

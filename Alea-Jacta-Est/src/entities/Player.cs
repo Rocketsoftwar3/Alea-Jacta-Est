@@ -8,6 +8,7 @@ public class Player
     public string Name { get; set; }
     public int Id { get; set; }
     public int Wallet { get; set; }
+    public int Health { get; set; }
     public bool IsLocalPlayer { get; set; }
 
     /// <summary>All decks for this player, indexed by name.</summary>
@@ -21,6 +22,7 @@ public class Player
         Name = name;
         Id = id;
         Wallet = 0;
+        Health = 100;
         IsLocalPlayer = isLocalPlayer;
 
         Decks = new Dictionary<string, Deck>
@@ -31,7 +33,10 @@ public class Player
             ["BoardDeck0"] = new Deck(),
             ["BoardDeck1"] = new Deck(),
             ["BoardDeck2"] = new Deck(),
-            ["BoardDeck3"] = new Deck()
+            ["BoardDeck3"] = new Deck(),
+            ["HandDeck"] = new Deck(),
+            ["ArcanaHandDeck"] = new Deck(),
+            ["ArcanaDiscardDeck"] = new Deck()
         };
 
         Market = new Market();

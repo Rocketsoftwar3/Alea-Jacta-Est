@@ -12,7 +12,7 @@ public class PapesseEffect : ICardEffect
 {
     public int Duration => 3;
 
-    public void OnPlay(GameState state, Card card)
+    public void OnPlay(GameState state, ArcanaCard card)
     {
         var currentPlayer = state.CurrentPlayer;
         if (currentPlayer == null) return;
@@ -28,7 +28,7 @@ public class PapesseEffect : ICardEffect
         }
     }
 
-    public void OnTurnStart(GameState state, Card card)
+    public void OnTurnStart(GameState state, ArcanaCard card)
     {
         var currentPlayer = state.CurrentPlayer;
         if (currentPlayer == null) return;
@@ -41,7 +41,7 @@ public class PapesseEffect : ICardEffect
         }
     }
 
-    public void OnRemove(GameState state, Card card)
+    public void OnRemove(GameState state, ArcanaCard card)
     {
         var currentPlayer = state.CurrentPlayer;
         if (currentPlayer == null) return;

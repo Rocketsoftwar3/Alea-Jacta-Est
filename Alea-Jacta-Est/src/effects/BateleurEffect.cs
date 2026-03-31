@@ -17,7 +17,7 @@ public class BateleurEffect : ICardEffect
 
     public int Duration => 0; // one-shot
 
-    public void OnPlay(GameState state, Card card)
+    public void OnPlay(GameState state, ArcanaCard card)
     {
         if (card.IsUpright)
             ResolveEndroit(state, card);
@@ -29,7 +29,7 @@ public class BateleurEffect : ICardEffect
     /// Endroit : Ajoute 10 pièces, pioche une carte bonus,
     /// et offre un rabais aléatoire (1-2 pièces) pour chaque carte dans la boutique.
     /// </summary>
-    private void ResolveEndroit(GameState state, Card card)
+    private void ResolveEndroit(GameState state, ArcanaCard card)
     {
         var currentPlayer = state.CurrentPlayer;
         if (currentPlayer == null) return;
@@ -49,7 +49,7 @@ public class BateleurEffect : ICardEffect
     /// Envers : Sélectionne une carte d'un adversaire face caché et la supprime.
     /// Si la carte est arcanique, le Bateleur est aussi supprimé.
     /// </summary>
-    private void ResolveEnvers(GameState state, Card card)
+    private void ResolveEnvers(GameState state, ArcanaCard card)
     {
         var currentPlayer = state.CurrentPlayer;
         if (currentPlayer == null) return;

@@ -12,39 +12,43 @@ public static class PositionConfig
     public const int ReferenceHeight = 540;
 
     /// <summary>Gets the deck configuration for a specific player and deck type.</summary>
-    public static DeckConfig GetDeckConfig(Player player, DeckType deckType)
+    /// <summary>Returns null if the deck type has no visual config (should be skipped during rendering).</summary>
+    public static DeckConfig? GetDeckConfig(Player player, DeckType deckType)
     {
         if (player.IsLocalPlayer)
         {
             return deckType switch
             {
-                DeckType.MainDeck => LocalPlayer.MainDeck,
-                DeckType.SpecialDeck => LocalPlayer.SpecialDeck,
-                DeckType.DiscardDeck => LocalPlayer.DiscardDeck,
-                DeckType.BoardDeck0 => LocalPlayer.BoardDecks[0],
-                DeckType.BoardDeck1 => LocalPlayer.BoardDecks[1],
-                DeckType.BoardDeck2 => LocalPlayer.BoardDecks[2],
-                DeckType.BoardDeck3 => LocalPlayer.BoardDecks[3],
-                _ => throw new System.ArgumentException($"Unknown deck type: {deckType}")
+                DeckType.MainDeck        => LocalPlayer.MainDeck,
+                DeckType.SpecialDeck     => LocalPlayer.SpecialDeck,
+                DeckType.DiscardDeck     => LocalPlayer.DiscardDeck,
+                DeckType.BoardDeck0      => LocalPlayer.BoardDecks[0],
+                DeckType.BoardDeck1      => LocalPlayer.BoardDecks[1],
+                DeckType.BoardDeck2      => LocalPlayer.BoardDecks[2],
+                DeckType.BoardDeck3      => LocalPlayer.BoardDecks[3],
+                DeckType.HandDeck        => LocalPlayer.HandDeck,
+                DeckType.ArcanaHandDeck  => LocalPlayer.ArcanaHandDeck,
+                DeckType.ArcanaDiscardDeck => LocalPlayer.ArcanaDiscardDeck,
+                _                        => null
             };
         }
         else
         {
-            // Find opponent index
-            int opponentIndex = player.Id - 1; // Assuming opponent IDs start at 1
+            int opponentIndex = player.Id - 1;
             if (opponentIndex < 0 || opponentIndex > 3)
                 opponentIndex = 0;
 
             return deckType switch
             {
-                DeckType.MainDeck => Opponents.GetMainDeck(opponentIndex),
+                DeckType.MainDeck    => Opponents.GetMainDeck(opponentIndex),
                 DeckType.SpecialDeck => Opponents.GetSpecialDeck(opponentIndex),
                 DeckType.DiscardDeck => Opponents.GetDiscardDeck(opponentIndex),
-                DeckType.BoardDeck0 => Opponents.GetBoardDeck(opponentIndex, 0),
-                DeckType.BoardDeck1 => Opponents.GetBoardDeck(opponentIndex, 1),
-                DeckType.BoardDeck2 => Opponents.GetBoardDeck(opponentIndex, 2),
-                DeckType.BoardDeck3 => Opponents.GetBoardDeck(opponentIndex, 3),
-                _ => throw new System.ArgumentException($"Unknown deck type: {deckType}")
+                DeckType.BoardDeck0  => Opponents.GetBoardDeck(opponentIndex, 0),
+                DeckType.BoardDeck1  => Opponents.GetBoardDeck(opponentIndex, 1),
+                DeckType.BoardDeck2  => Opponents.GetBoardDeck(opponentIndex, 2),
+                DeckType.BoardDeck3  => Opponents.GetBoardDeck(opponentIndex, 3),
+                // HandDeck/ArcanaHandDeck/ArcanaDiscardDeck are hidden for opponents
+                _                    => null
             };
         }
     }
@@ -89,14 +93,41 @@ public static class PositionConfig
     // Local player deck positions (bottom of screen)
     public static class LocalPlayer
     {
-
+        // Draw pile (face-down, small stacked pile on the left)
         public static readonly DeckConfig MainDeck = new(
+            relativePosition: new Vector2(0.05f, 0.75f),
+            displayMode: DeckDisplayMode.Stacked,
+            isFrontVisible: false,
+            baseCardScale: 0.7f,
+            stackOffset: 4f
+        );
+
+        // Playable hand (face-up fan, center-bottom)
+        public static readonly DeckConfig HandDeck = new(
             relativePosition: new Vector2(0.5f, 0.75f),
             displayMode: DeckDisplayMode.FanUp,
             isFrontVisible: true,
             baseCardScale: 0.7f,
             fanSpreadDegrees: 85f,
             fanRadius: 380f
+        );
+
+        // Arcana hand card (face-up stacked, next to SpecialDeck)
+        public static readonly DeckConfig ArcanaHandDeck = new(
+            relativePosition: new Vector2(0.17f, 0.72f),
+            displayMode: DeckDisplayMode.Stacked,
+            isFrontVisible: true,
+            baseCardScale: 0.9f,
+            stackOffset: 4f
+        );
+
+        // Arcana discard (face-down, far right)
+        public static readonly DeckConfig ArcanaDiscardDeck = new(
+            relativePosition: new Vector2(0.95f, 0.72f),
+            displayMode: DeckDisplayMode.Stacked,
+            isFrontVisible: false,
+            baseCardScale: 0.9f,
+            stackOffset: 4f
         );
 
         public static readonly DeckConfig SpecialDeck = new(

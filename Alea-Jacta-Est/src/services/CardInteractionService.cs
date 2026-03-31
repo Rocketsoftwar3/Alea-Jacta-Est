@@ -21,7 +21,8 @@ public class CardInteractionService
     private static readonly DeckType[] LocalDeckTypes =
     {
         DeckType.MainDeck, DeckType.SpecialDeck, DeckType.DiscardDeck,
-        DeckType.BoardDeck0, DeckType.BoardDeck1, DeckType.BoardDeck2, DeckType.BoardDeck3
+        DeckType.BoardDeck0, DeckType.BoardDeck1, DeckType.BoardDeck2, DeckType.BoardDeck3,
+        DeckType.HandDeck, DeckType.ArcanaHandDeck
     };
 
     private const float HoverScale  = 1.12f;
@@ -50,6 +51,7 @@ public class CardInteractionService
         {
             var deck   = PositionConfig.GetDeck(state.LocalPlayer, deckType);
             var config = PositionConfig.GetDeckConfig(state.LocalPlayer, deckType);
+            if (config == null) continue; // deck has no visual config
 
             foreach (var card in deck.Cards)
                 card.IsHovered = false;
@@ -97,13 +99,31 @@ public class CardInteractionService
                         new Vector2(1, 1), new Vector2(0, 1));
 
                     // ── Tooltip ──────────────────────────────────────────────────
-                    string cardName = FormatTextureName(texture.Name);
                     ImGui.BeginTooltip();
-                    ImGui.TextUnformatted(cardName);
-                    ImGui.Separator();
-                    ImGui.TextUnformatted($"Orientation : {(info.Card.IsUpright ? "Endroit" : "Envers")}");
-                    if (info.Card.Price > 0)
-                        ImGui.TextUnformatted($"Prix        : {info.Card.Price}");
+                    if (info.Card is Entities.ValueCard vc)
+                    {
+                        ImGui.TextUnformatted(vc.DisplayName);
+                        ImGui.Separator();
+                        if (vc.IsFaceCard)
+                            ImGui.TextUnformatted($"Multiplicateur : x{vc.Multiplier}");
+                        else
+                            ImGui.TextUnformatted($"Valeur : {vc.DamageValue}");
+                        ImGui.TextUnformatted($"Enseigne : {vc.Suit}");
+                    }
+                    else if (info.Card is Entities.ArcanaCard ac)
+                    {
+                        ImGui.TextUnformatted($"{ac.ArcanaNumber} — {ac.ArcanaName}");
+                        ImGui.Separator();
+                        ImGui.TextUnformatted($"Orientation : {(ac.IsUpright ? "Endroit" : "Envers")}");
+                        if (ac.Price > 0)
+                            ImGui.TextUnformatted($"Prix : {ac.Price}");
+                    }
+                    else
+                    {
+                        ImGui.TextUnformatted(FormatTextureName(texture.Name));
+                        ImGui.Separator();
+                        ImGui.TextUnformatted($"Orientation : {(info.Card.IsUpright ? "Endroit" : "Envers")}");
+                    }
                     ImGui.EndTooltip();
 
                     // ── Click → emit command ────────────────────────────────────
