@@ -1,6 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Alea_Jacta_Est.Commands;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
@@ -43,8 +44,8 @@ public class HandWindowService
         ImGui.Begin($"Main — {phaseLabel} (Tour {state.CurrentTurn})");
 
         // ── Value cards in hand ───────────────────────────────────────────────
-        var handDeck = player.Decks["HandDeck"];
-        if (handDeck.Cards.Count == 0 && player.Decks["ArcanaHandDeck"].Cards.Count == 0)
+        var handDeck = player.Decks[DeckType.HandDeck];
+        if (handDeck.Cards.Count == 0 && player.Decks[DeckType.ArcanaHandDeck].Cards.Count == 0)
         {
             ImGui.TextDisabled("Aucune carte en main.");
             ImGui.End();
@@ -102,7 +103,7 @@ public class HandWindowService
             }
 
             // Arcana card
-            var arcanaHand = player.Decks["ArcanaHandDeck"];
+            var arcanaHand = player.Decks[DeckType.ArcanaHandDeck];
             for (int i = 0; i < arcanaHand.Cards.Count; i++)
             {
                 var card = arcanaHand.Cards[i];

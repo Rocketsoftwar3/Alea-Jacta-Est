@@ -3,6 +3,7 @@ using System.IO;
 using System.Numerics;
 using ImGuiNET;
 using Alea_Jacta_Est.Commands;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
@@ -144,10 +145,10 @@ public class MarketWindowService
 
             var sellableSources = new List<(string Label, Deck Deck)>
             {
-                ("Pioche",           player.Decks["MainDeck"]),
-                ("Défausse",         player.Decks["DiscardDeck"]),
-                ("Pioche Arcanique", player.Decks["SpecialDeck"]),
-                ("Défausse Arc.",    player.Decks["ArcanaDiscardDeck"]),
+                ("Pioche",           player.Decks[DeckType.MainDeck]),
+                ("Défausse",         player.Decks[DeckType.DiscardDeck]),
+                ("Pioche Arcanique", player.Decks[DeckType.SpecialDeck]),
+                ("Défausse Arc.",    player.Decks[DeckType.ArcanaDiscardDeck]),
             };
 
             var sellFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg

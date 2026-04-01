@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Alea_Jacta_Est.Config;
 
 namespace Alea_Jacta_Est.Entities;
 
@@ -11,8 +13,8 @@ public class Player
     public int Health { get; set; }
     public bool IsLocalPlayer { get; set; }
 
-    /// <summary>All decks for this player, indexed by name.</summary>
-    public Dictionary<string, Deck> Decks { get; }
+    /// <summary>All decks for this player, indexed by DeckType.</summary>
+    public Dictionary<DeckType, Deck> Decks { get; }
 
     /// <summary>Market with available cards for purchase.</summary>
     public Market Market { get; }
@@ -25,20 +27,23 @@ public class Player
         Health = 100;
         IsLocalPlayer = isLocalPlayer;
 
-        Decks = new Dictionary<string, Deck>
+        Decks = new Dictionary<DeckType, Deck>
         {
-            ["MainDeck"] = new Deck(),
-            ["SpecialDeck"] = new Deck(),
-            ["DiscardDeck"] = new Deck(),
-            ["BoardDeck0"] = new Deck(),
-            ["BoardDeck1"] = new Deck(),
-            ["BoardDeck2"] = new Deck(),
-            ["BoardDeck3"] = new Deck(),
-            ["HandDeck"] = new Deck(),
-            ["ArcanaHandDeck"] = new Deck(),
-            ["ArcanaDiscardDeck"] = new Deck()
+            [DeckType.MainDeck] = new Deck(),
+            [DeckType.SpecialDeck] = new Deck(),
+            [DeckType.DiscardDeck] = new Deck(),
+            [DeckType.BoardDeck0] = new Deck(),
+            [DeckType.BoardDeck1] = new Deck(),
+            [DeckType.BoardDeck2] = new Deck(),
+            [DeckType.BoardDeck3] = new Deck(),
+            [DeckType.HandDeck] = new Deck(),
+            [DeckType.ArcanaHandDeck] = new Deck(),
+            [DeckType.ArcanaDiscardDeck] = new Deck()
         };
 
         Market = new Market();
     }
+
+    /// <summary>Temporary bridge for UI services still using string keys. Remove after UI migration.</summary>
+    public Deck GetDeck(string key) => Decks[Enum.Parse<DeckType>(key)];
 }

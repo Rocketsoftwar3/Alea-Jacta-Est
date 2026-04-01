@@ -27,9 +27,25 @@ public class GameState
 
     public List<Player> Players { get; }
     public GamePhase Phase { get; set; }
-    public TurnPhase CurrentTurnPhase { get; set; }
     public int CurrentPlayerIndex { get; set; }
-    public int CurrentTurn { get; set; }
+
+    /// <summary>Phase state machine and turn counter (extracted for SRP).</summary>
+    public TurnPhaseManager PhaseManager { get; }
+
+    /// <summary>Delegates to PhaseManager.CurrentTurnPhase.</summary>
+    public TurnPhase CurrentTurnPhase
+    {
+        get => PhaseManager.CurrentTurnPhase;
+        set => PhaseManager.CurrentTurnPhase = value;
+    }
+
+    /// <summary>Delegates to PhaseManager.CurrentTurn.</summary>
+    public int CurrentTurn
+    {
+        get => PhaseManager.CurrentTurn;
+        set => PhaseManager.CurrentTurn = value;
+    }
+
     /// <summary>The player on this machine. Computed from IsLocalPlayer flag so it works in multiplayer.</summary>
     public Player LocalPlayer => Players.FirstOrDefault(p => p.IsLocalPlayer) ?? Players[0];
 
@@ -43,7 +59,7 @@ public class GameState
     public PendingActivation? PendingActivation { get; set; }
 
     /// <summary>Populated when Phase transitions to Finished. Sorted by TotalDamageDealt descending.</summary>
-    public List<(Player Player, int TotalDamageDealt)> FinalScores { get; private set; } = new();
+    public List<(Player Player, int TotalDamageDealt)> FinalScores { get; set; } = new();
 
     public Player? CurrentPlayer => Players.Count > 0 && CurrentPlayerIndex < Players.Count
         ? Players[CurrentPlayerIndex]
@@ -60,11 +76,10 @@ public class GameState
 
     public GameState(string localPlayerName)
     {
+        PhaseManager = new TurnPhaseManager();
         Players = new List<Player>(MaxPlayers);
         Phase = GamePhase.WaitingForPlayers;
-        CurrentTurnPhase = TurnPhase.DrawPhase;
         CurrentPlayerIndex = 0;
-        CurrentTurn = 1;
 
         Players.Add(new Player(localPlayerName, isLocalPlayer: true));
 
@@ -75,57 +90,32 @@ public class GameState
     public void StartGame()
     {
         Phase = GamePhase.InProgress;
-        CurrentTurnPhase = TurnPhase.DrawPhase;
-        CurrentTurn = 1;
+        PhaseManager.CurrentTurnPhase = TurnPhase.DrawPhase;
+        PhaseManager.CurrentTurn = 1;
 
         TurnStates.Clear();
         for (int i = 0; i < Players.Count; i++)
             TurnStates[i] = new PlayerTurnState();
     }
 
-    /// <summary>Advances to the next phase in the cycle.</summary>
-    public void AdvanceTurnPhase()
+    /// <summary>Delegates to PhaseManager.AdvanceTurnPhase().</summary>
+    public void AdvanceTurnPhase() => PhaseManager.AdvanceTurnPhase();
+
+    /// <summary>Delegates to PhaseManager.AdvanceToNextTurn().</summary>
+    public void AdvanceToNextTurn() => PhaseManager.AdvanceToNextTurn(TurnStates);
+
+    /// <summary>Delegates to VictoryChecker.</summary>
+    public bool CheckVictory() => VictoryChecker.CheckVictory(this);
+
+    /// <summary>Returns the index of the next alive, non-validated player after <paramref name="from"/>, or -1 if none.</summary>
+    public int FindNextActivePlayer(int from)
     {
-        CurrentTurnPhase = CurrentTurnPhase switch
+        for (int i = 1; i <= Players.Count; i++)
         {
-            TurnPhase.DrawPhase       => TurnPhase.PlayPhase,
-            TurnPhase.PlayPhase       => TurnPhase.ValidatePhase,
-            TurnPhase.ValidatePhase   => TurnPhase.ResolutionPhase,
-            TurnPhase.ResolutionPhase => TurnPhase.CleanupPhase,
-            TurnPhase.CleanupPhase    => TurnPhase.ShopPhase,
-            TurnPhase.ShopPhase       => TurnPhase.DrawPhase,
-            _                         => TurnPhase.DrawPhase
-        };
-    }
-
-    /// <summary>Resets all TurnStates and increments the turn counter.</summary>
-    public void AdvanceToNextTurn()
-    {
-        CurrentTurn++;
-        foreach (var ts in TurnStates.Values)
-            ts.Reset();
-    }
-
-    /// <summary>Checks if only one (or zero) player remains alive. Transitions to Finished if so.</summary>
-    public bool CheckVictory()
-    {
-        if (Phase != GamePhase.InProgress) return false;
-
-        var alive = Players.Where(p => p.Health > 0).ToList();
-        if (alive.Count <= 1)
-        {
-            Phase = GamePhase.Finished;
-            BuildFinalScores();
-            return true;
+            int idx = (from + i) % Players.Count;
+            if (Players[idx].Health > 0 && TurnStates[idx].HasValidated == false)
+                return idx;
         }
-        return false;
-    }
-
-    private void BuildFinalScores()
-    {
-        FinalScores = Players
-            .Select((p, i) => (Player: p, TotalDamageDealt: TurnStates.TryGetValue(i, out var ts) ? ts.TotalDamageDealt : 0))
-            .OrderByDescending(x => x.TotalDamageDealt)
-            .ToList();
+        return -1;
     }
 }

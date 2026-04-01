@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using ImGuiNET;
 using Alea_Jacta_Est.Commands;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
@@ -158,9 +159,9 @@ public class HUDService
                     ImGui.TextDisabled($"  (-{player.Market.Discount * 100:F0}%%)");
                 }
 
-                int mainCount    = player.Decks.TryGetValue("MainDeck",    out var md) ? md.Cards.Count : 0;
-                int discardCount = player.Decks.TryGetValue("DiscardDeck", out var dd) ? dd.Cards.Count : 0;
-                int arcanaCount  = player.Decks.TryGetValue("ArcanaHandDeck", out var ah) ? ah.Cards.Count : 0;
+                int mainCount    = player.Decks.TryGetValue(DeckType.MainDeck,    out var md) ? md.Cards.Count : 0;
+                int discardCount = player.Decks.TryGetValue(DeckType.DiscardDeck, out var dd) ? dd.Cards.Count : 0;
+                int arcanaCount  = player.Decks.TryGetValue(DeckType.ArcanaHandDeck, out var ah) ? ah.Cards.Count : 0;
                 ImGui.TextDisabled($"Pioche: {mainCount}  Déf: {discardCount}  Arc: {arcanaCount}");
 
                 var effects = _effectManager.GetActiveEffectSummary();
@@ -173,12 +174,12 @@ public class HUDService
             }
             else
             {
-                int mainCount = player.Decks.TryGetValue("MainDeck", out var md) ? md.Cards.Count : 0;
+                int mainCount = player.Decks.TryGetValue(DeckType.MainDeck, out var md) ? md.Cards.Count : 0;
                 ImGui.TextDisabled($"Pioche: {mainCount}");
 
                 // Impératrice: show opponent hand if visible
                 bool canSeeHands = state.TurnStates.TryGetValue(0, out var localTs) && localTs.CanSeeOpponentHands;
-                if (canSeeHands && player.Decks.TryGetValue("HandDeck", out var oppHand) && oppHand.Cards.Count > 0)
+                if (canSeeHands && player.Decks.TryGetValue(DeckType.HandDeck, out var oppHand) && oppHand.Cards.Count > 0)
                 {
                     ImGui.TextColored(new Vector4(0.4f, 1f, 0.8f, 1f), "Main visible (Impératrice) :");
                     foreach (var c in oppHand.Cards)
@@ -200,7 +201,7 @@ public class HUDService
         if (state.CurrentTurnPhase != TurnPhase.PlayPhase) return;
 
         var player = state.LocalPlayer;
-        if (!player.Decks.TryGetValue("BoardDeck0", out var board) || board.Cards.Count == 0) return;
+        if (!player.Decks.TryGetValue(DeckType.BoardDeck0, out var board) || board.Cards.Count == 0) return;
 
         int localIdx = state.Players.IndexOf(player);
         float boost = state.TurnStates.TryGetValue(localIdx, out var ts) && ts.MultiplierDoubled ? 2f : 1f;

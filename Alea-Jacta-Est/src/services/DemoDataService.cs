@@ -1,3 +1,4 @@
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 
@@ -21,11 +22,11 @@ public class DemoDataService
 
         // Main deck: 20 random value cards (draw pile, shown face-down)
         for (int i = 0; i < 20; i++)
-            localPlayer.Decks["MainDeck"].AddCard(_cardFactory.CreateRandomValueCard());
+            localPlayer.Decks[DeckType.MainDeck].AddCard(_cardFactory.CreateRandomValueCard());
 
         // Special deck: 5 arcana cards
         for (int i = 0; i < 5; i++)
-            localPlayer.Decks["SpecialDeck"].AddCard(_cardFactory.BuildRandom());
+            localPlayer.Decks[DeckType.SpecialDeck].AddCard(_cardFactory.BuildRandom());
 
         // Market: 6 arcana cards for purchase
         for (int i = 0; i < 6; i++)
@@ -37,10 +38,10 @@ public class DemoDataService
             var opponent = new Player($"Joueur {opponentIndex + 2}", opponentIndex + 1, isLocalPlayer: false);
 
             for (int i = 0; i < 15; i++)
-                opponent.Decks["MainDeck"].AddCard(_cardFactory.CreateRandomValueCard());
+                opponent.Decks[DeckType.MainDeck].AddCard(_cardFactory.CreateRandomValueCard());
 
             for (int i = 0; i < 5; i++)
-                opponent.Decks["SpecialDeck"].AddCard(_cardFactory.BuildRandom());
+                opponent.Decks[DeckType.SpecialDeck].AddCard(_cardFactory.BuildRandom());
 
             state.Players.Add(opponent);
         }

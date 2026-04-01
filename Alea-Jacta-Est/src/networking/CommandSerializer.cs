@@ -1,6 +1,7 @@
 using System;
 using MessagePack;
 using Alea_Jacta_Est.Commands;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Main;
 using Alea_Jacta_Est.Networking;
@@ -46,7 +47,7 @@ public static class CommandSerializer
             case PlayCardCommand c:
             {
                 int pi = state.Players.IndexOf(c.Player);
-                int ci = c.Player.Decks["HandDeck"].Cards.IndexOf(c.Card);
+                int ci = c.Player.Decks[DeckType.HandDeck].Cards.IndexOf(c.Card);
                 cmdType = CmdType.PlayCard;
                 payload = MessagePackSerializer.Serialize(new PlayCardMsg { PlayerIndex = pi, CardIndex = ci });
                 break;
@@ -54,7 +55,7 @@ public static class CommandSerializer
             case TakeBackCardCommand c:
             {
                 int pi = state.Players.IndexOf(c.Player);
-                int ci = c.Player.Decks["BoardDeck0"].Cards.IndexOf(c.Card);
+                int ci = c.Player.Decks[DeckType.BoardDeck0].Cards.IndexOf(c.Card);
                 cmdType = CmdType.TakeBack;
                 payload = MessagePackSerializer.Serialize(new TakeBackMsg { PlayerIndex = pi, CardIndex = ci });
                 break;
@@ -62,7 +63,7 @@ public static class CommandSerializer
             case ActivateArcanaCommand c:
             {
                 int pi = state.Players.IndexOf(c.Player);
-                int ci = c.Player.Decks["ArcanaHandDeck"].Cards.IndexOf(c.Card);
+                int ci = c.Player.Decks[DeckType.ArcanaHandDeck].Cards.IndexOf(c.Card);
                 cmdType = CmdType.ActivateArcana;
                 payload = MessagePackSerializer.Serialize(new ActivateArcanaMsg { PlayerIndex = pi, CardIndex = ci });
                 break;
@@ -70,7 +71,7 @@ public static class CommandSerializer
             case ActivateArcanaWithTargetCommand c:
             {
                 int pi  = state.Players.IndexOf(c.Activator);
-                int ci  = c.Activator.Decks["ArcanaHandDeck"].Cards.IndexOf(c.Card);
+                int ci  = c.Activator.Decks[DeckType.ArcanaHandDeck].Cards.IndexOf(c.Card);
                 int ti  = state.Players.IndexOf(c.Target);
                 cmdType = CmdType.ActivateArcanaTarget;
                 payload = MessagePackSerializer.Serialize(new ActivateTargetMsg { PlayerIndex = pi, CardIndex = ci, TargetPlayerIndex = ti });
@@ -90,10 +91,10 @@ public static class CommandSerializer
                 // Find card across all decks
                 string deckName = "";
                 int cardIdx = -1;
-                foreach (var (name, deck) in state.Players[pi].Decks)
+                foreach (var (dt, deck) in state.Players[pi].Decks)
                 {
                     cardIdx = deck.Cards.IndexOf(c.Card);
-                    if (cardIdx >= 0) { deckName = name; break; }
+                    if (cardIdx >= 0) { deckName = dt.ToString(); break; }
                 }
                 cmdType = CmdType.SellCard;
                 payload = MessagePackSerializer.Serialize(new SellCardMsg { PlayerIndex = pi, CardIndex = cardIdx, DeckName = deckName });
@@ -115,10 +116,10 @@ public static class CommandSerializer
                 int pi = -1; string dn = ""; int ci2 = -1;
                 for (int p = 0; p < state.Players.Count; p++)
                 {
-                    foreach (var (name, deck) in state.Players[p].Decks)
+                    foreach (var (dt, deck) in state.Players[p].Decks)
                     {
                         int idx = deck.Cards.IndexOf(c.Card);
-                        if (idx >= 0) { pi = p; dn = name; ci2 = idx; break; }
+                        if (idx >= 0) { pi = p; dn = dt.ToString(); ci2 = idx; break; }
                     }
                     if (pi >= 0) break;
                 }
@@ -153,28 +154,28 @@ public static class CommandSerializer
             {
                 var m = MessagePackSerializer.Deserialize<PlayCardMsg>(payload);
                 var player = state.Players[m.PlayerIndex];
-                var card   = (Alea_Jacta_Est.Entities.ValueCard)player.Decks["HandDeck"].Cards[m.CardIndex];
+                var card   = (Alea_Jacta_Est.Entities.ValueCard)player.Decks[DeckType.HandDeck].Cards[m.CardIndex];
                 return new PlayCardCommand(player, card);
             }
             case CmdType.TakeBack:
             {
                 var m = MessagePackSerializer.Deserialize<TakeBackMsg>(payload);
                 var player = state.Players[m.PlayerIndex];
-                var card   = (Alea_Jacta_Est.Entities.ValueCard)player.Decks["BoardDeck0"].Cards[m.CardIndex];
+                var card   = (Alea_Jacta_Est.Entities.ValueCard)player.Decks[DeckType.BoardDeck0].Cards[m.CardIndex];
                 return new TakeBackCardCommand(player, card);
             }
             case CmdType.ActivateArcana:
             {
                 var m = MessagePackSerializer.Deserialize<ActivateArcanaMsg>(payload);
                 var player = state.Players[m.PlayerIndex];
-                var card   = (Alea_Jacta_Est.Entities.ArcanaCard)player.Decks["ArcanaHandDeck"].Cards[m.CardIndex];
+                var card   = (Alea_Jacta_Est.Entities.ArcanaCard)player.Decks[DeckType.ArcanaHandDeck].Cards[m.CardIndex];
                 return new ActivateArcanaCommand(player, card, null, effectManager);
             }
             case CmdType.ActivateArcanaTarget:
             {
                 var m      = MessagePackSerializer.Deserialize<ActivateTargetMsg>(payload);
                 var player = state.Players[m.PlayerIndex];
-                var card   = (Alea_Jacta_Est.Entities.ArcanaCard)player.Decks["ArcanaHandDeck"].Cards[m.CardIndex];
+                var card   = (Alea_Jacta_Est.Entities.ArcanaCard)player.Decks[DeckType.ArcanaHandDeck].Cards[m.CardIndex];
                 var target = state.Players[m.TargetPlayerIndex];
                 return new ActivateArcanaWithTargetCommand(player, card, target, effectManager);
             }
@@ -190,7 +191,8 @@ public static class CommandSerializer
             {
                 var m      = MessagePackSerializer.Deserialize<SellCardMsg>(payload);
                 var player = state.Players[m.PlayerIndex];
-                var deck   = player.Decks[m.DeckName];
+                var dt     = Enum.Parse<DeckType>(m.DeckName);
+                var deck   = player.Decks[dt];
                 var card   = deck.Cards[m.CardIndex];
                 return new SellCardCommand(player, card, deck, m.PlayerIndex);
             }
@@ -207,7 +209,8 @@ public static class CommandSerializer
             case CmdType.FlipCard:
             {
                 var m    = MessagePackSerializer.Deserialize<FlipCardMsg_Net>(payload);
-                var card = state.Players[m.PlayerIndex].Decks[m.DeckName].Cards[m.CardIndex];
+                var dt   = Enum.Parse<DeckType>(m.DeckName);
+                var card = state.Players[m.PlayerIndex].Decks[dt].Cards[m.CardIndex];
                 return new FlipCardCommand(card);
             }
             default:

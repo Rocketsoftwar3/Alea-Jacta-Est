@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 
@@ -39,12 +40,12 @@ public class MortEffect : ICardEffect
 
         bool selfTarget = target == activator;
 
-        var targetHand = target.Decks["HandDeck"];
-        var targetBoard = target.Decks["BoardDeck0"];
-        var targetDiscard = target.Decks["DiscardDeck"];
-        var targetSpecial = target.Decks["SpecialDeck"];
-        var targetArcanaHand = target.Decks["ArcanaHandDeck"];
-        var targetArcanaDiscard = target.Decks["ArcanaDiscardDeck"];
+        var targetHand = target.Decks[DeckType.HandDeck];
+        var targetBoard = target.Decks[DeckType.BoardDeck0];
+        var targetDiscard = target.Decks[DeckType.DiscardDeck];
+        var targetSpecial = target.Decks[DeckType.SpecialDeck];
+        var targetArcanaHand = target.Decks[DeckType.ArcanaHandDeck];
+        var targetArcanaDiscard = target.Decks[DeckType.ArcanaDiscardDeck];
 
         // Count cards to discard (value cards only, not La Mort itself)
         var handValueCards = targetHand.Cards.OfType<ValueCard>().ToList();
@@ -81,8 +82,8 @@ public class MortEffect : ICardEffect
         }
 
         // Piocher le même nombre de cartes à valeur
-        var targetMain = target.Decks["MainDeck"];
-        var shuffledDiscard = target.Decks["DiscardDeck"];
+        var targetMain = target.Decks[DeckType.MainDeck];
+        var shuffledDiscard = target.Decks[DeckType.DiscardDeck];
 
         if (targetMain.Cards.Count < discardCount && shuffledDiscard.Cards.Count > 0)
         {

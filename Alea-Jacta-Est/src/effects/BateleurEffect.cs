@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 using Alea_Jacta_Est.Utils;
@@ -37,8 +38,8 @@ public class BateleurEffect : ICardEffect
         player.Wallet += 10;
 
         // Pioche 1 carte bonus depuis la pioche principale
-        var mainDeck = player.Decks["MainDeck"];
-        var hand = player.Decks["HandDeck"];
+        var mainDeck = player.Decks[DeckType.MainDeck];
+        var hand = player.Decks[DeckType.HandDeck];
         if (mainDeck.Cards.Count > 0)
         {
             var bonus = mainDeck.DrawCard();
@@ -60,7 +61,8 @@ public class BateleurEffect : ICardEffect
         if (target == null || activator == null) return;
 
         // Choisir un deck face-cachée (MainDeck ou SpecialDeck)
-        var faceDownDecks = new[] { "MainDeck", "SpecialDeck" }
+        var faceDownTypes = new[] { DeckType.MainDeck, DeckType.SpecialDeck };
+        var faceDownDecks = faceDownTypes
             .Select(k => target.Decks.TryGetValue(k, out var d) ? d : null)
             .Where(d => d != null && d!.Cards.Count > 0)
             .ToList();
@@ -69,18 +71,18 @@ public class BateleurEffect : ICardEffect
 
         var targetDeck = faceDownDecks[_rng.Next(faceDownDecks.Count)]!;
 
-        if (!target.Decks.ContainsKey("RemovedCards"))
-            target.Decks["RemovedCards"] = new Deck();
+        if (!target.Decks.ContainsKey(DeckType.RemovedCards))
+            target.Decks[DeckType.RemovedCards] = new Deck();
 
-        var removed = Helper.MoveRandomCard(targetDeck, target.Decks["RemovedCards"]);
+        var removed = Helper.MoveRandomCard(targetDeck, target.Decks[DeckType.RemovedCards]);
 
         // Si la carte supprimée est arcanique → supprimer aussi le Bateleur
         if (removed is ArcanaCard)
         {
-            if (!activator.Decks.ContainsKey("RemovedCards"))
-                activator.Decks["RemovedCards"] = new Deck();
-            activator.Decks["ArcanaDiscardDeck"].RemoveCard(bateleur);
-            activator.Decks["RemovedCards"].AddCard(bateleur);
+            if (!activator.Decks.ContainsKey(DeckType.RemovedCards))
+                activator.Decks[DeckType.RemovedCards] = new Deck();
+            activator.Decks[DeckType.ArcanaDiscardDeck].RemoveCard(bateleur);
+            activator.Decks[DeckType.RemovedCards].AddCard(bateleur);
         }
     }
 }

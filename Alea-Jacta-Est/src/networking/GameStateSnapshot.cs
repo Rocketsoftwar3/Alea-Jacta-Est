@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using MessagePack;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 using Alea_Jacta_Est.Services;
@@ -122,12 +124,12 @@ public class GameStateSnapshot
                 MarketDiscount = p.Market.Discount,
             };
 
-            foreach (var (deckName, deck) in p.Decks)
+            foreach (var (deckType, deck) in p.Decks)
             {
                 var cards = new List<CardSnapshot>(deck.Cards.Count);
                 foreach (var card in deck.Cards)
                     cards.Add(SnapCard(card));
-                ps.Decks[deckName] = cards;
+                ps.Decks[deckType.ToString()] = cards;
             }
 
             foreach (var card in p.Market.Deck.Cards)
@@ -187,12 +189,15 @@ public class GameStateSnapshot
             p.Market.Discount = ps.MarketDiscount;
 
             // Rebuild decks
+            var snapshotDeckTypes = new HashSet<DeckType>();
             foreach (var (deckName, cardSnaps) in ps.Decks)
             {
-                if (!p.Decks.TryGetValue(deckName, out var deck))
+                var dt = Enum.Parse<DeckType>(deckName);
+                snapshotDeckTypes.Add(dt);
+                if (!p.Decks.TryGetValue(dt, out var deck))
                 {
                     deck = new Deck();
-                    p.Decks[deckName] = deck;
+                    p.Decks[dt] = deck;
                 }
                 deck.Cards.Clear();
                 foreach (var cs in cardSnaps)
@@ -200,9 +205,9 @@ public class GameStateSnapshot
             }
 
             // Remove decks not in snapshot (cleaned up by host)
-            var toRemove = new System.Collections.Generic.List<string>();
+            var toRemove = new List<DeckType>();
             foreach (var key in p.Decks.Keys)
-                if (!ps.Decks.ContainsKey(key)) toRemove.Add(key);
+                if (!snapshotDeckTypes.Contains(key)) toRemove.Add(key);
             foreach (var key in toRemove)
                 p.Decks.Remove(key);
 

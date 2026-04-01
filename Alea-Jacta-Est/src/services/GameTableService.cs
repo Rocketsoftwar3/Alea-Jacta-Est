@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using ImGuiNET;
 using Alea_Jacta_Est.Commands;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
@@ -175,7 +176,7 @@ public class GameTableService
             ImGui.PopStyleColor();
 
             // ── Arcana deck pile (small, top-left of box) ────────────
-            if (opp.Decks.TryGetValue("SpecialDeck", out var arcDeck) && arcDeck.Cards.Count > 0)
+            if (opp.Decks.TryGetValue(DeckType.SpecialDeck, out var arcDeck) && arcDeck.Cards.Count > 0)
             {
                 ImGui.TextDisabled($"Arc: {arcDeck.Cards.Count}");
                 ImGui.SameLine(0, 4);
@@ -190,11 +191,11 @@ public class GameTableService
             }
 
             // ── Hand fan (face-down, fanning UPWARD from bottom) ─────
-            if (opp.Decks.TryGetValue("MainDeck", out var md) && md.Cards.Count > 0)
+            if (opp.Decks.TryGetValue(DeckType.MainDeck, out var md) && md.Cards.Count > 0)
                 RenderOppFan(opp, md, r, slotW);
 
             // ── Board cards (face up so everyone can see what was played) ───
-            if (opp.Decks.TryGetValue("BoardDeck0", out var brd) && brd.Cards.Count > 0)
+            if (opp.Decks.TryGetValue(DeckType.BoardDeck0, out var brd) && brd.Cards.Count > 0)
             {
                 ImGui.Spacing();
                 int oppIdx = state.Players.IndexOf(opp);
@@ -210,7 +211,7 @@ public class GameTableService
 
             // ── Imperatrice: show opponent hand if visible ───────────
             if (state.TurnStates.TryGetValue(0, out var lts) && lts.CanSeeOpponentHands
-                && opp.Decks.TryGetValue("HandDeck", out var oh) && oh.Cards.Count > 0)
+                && opp.Decks.TryGetValue(DeckType.HandDeck, out var oh) && oh.Cards.Count > 0)
             {
                 ImGui.Spacing();
                 ImGui.TextColored(new Vector4(0.4f, 1f, 0.8f, 1f), "Main visible:");
@@ -272,7 +273,7 @@ public class GameTableService
     private void RenderBoard(GameState state, Player player, ImGuiRenderer r, float w, float h)
     {
         bool isPlayPhase = state.CurrentTurnPhase == TurnPhase.PlayPhase;
-        var  board       = player.Decks["BoardDeck0"];
+        var  board       = player.Decks[DeckType.BoardDeck0];
 
         ImGui.BeginChild("##board", new Vector2(w, h), ImGuiChildFlags.Borders);
 
@@ -357,8 +358,8 @@ public class GameTableService
         ImGui.ProgressBar(f, new Vector2(280, 18), $"HP {player.Health}/100");
         ImGui.PopStyleColor();
 
-        int pioche = player.Decks.TryGetValue("MainDeck",       out var mdd) ? mdd.Cards.Count : 0;
-        int arcArc = player.Decks.TryGetValue("ArcanaHandDeck", out var aha) ? aha.Cards.Count : 0;
+        int pioche = player.Decks.TryGetValue(DeckType.MainDeck,       out var mdd) ? mdd.Cards.Count : 0;
+        int arcArc = player.Decks.TryGetValue(DeckType.ArcanaHandDeck, out var aha) ? aha.Cards.Count : 0;
         ImGui.SameLine(0, 12);
         ImGui.TextDisabled($"Pioche: {pioche}  Arc: {arcArc}");
 
@@ -439,7 +440,7 @@ public class GameTableService
 
     private void RenderArcanaGrid(Player player, ImGuiRenderer r, bool isPlayPhase, bool arcanaLimit, float gridW, float gridH)
     {
-        if (!player.Decks.TryGetValue("ArcanaHandDeck", out var arcanaHand))
+        if (!player.Decks.TryGetValue(DeckType.ArcanaHandDeck, out var arcanaHand))
             return;
 
         // Header (outside scroll area)
@@ -525,7 +526,7 @@ public class GameTableService
         float cardY   = origin.Y + CardPile.Y * 0.5f;
 
         // Helper: draw one pile and its label
-        void DrawPile(string deckKey, string label, float x, bool showFront)
+        void DrawPile(DeckType deckKey, string label, float x, bool showFront)
         {
             if (!player.Decks.TryGetValue(deckKey, out var deck) || deck.Cards.Count == 0)
             {
@@ -566,9 +567,9 @@ public class GameTableService
                 CardTooltip(r, topCard);
         }
 
-        DrawPile("SpecialDeck",  "Arc. Pioche", centerX - pileSpacing, false);
-        DrawPile("MainDeck",     "Pioche",      centerX,               false);
-        DrawPile("DiscardDeck",  "Defausse",    centerX + pileSpacing, true);
+        DrawPile(DeckType.SpecialDeck,  "Arc. Pioche", centerX - pileSpacing, false);
+        DrawPile(DeckType.MainDeck,     "Pioche",      centerX,               false);
+        DrawPile(DeckType.DiscardDeck,  "Defausse",    centerX + pileSpacing, true);
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -577,8 +578,8 @@ public class GameTableService
 
     private void RenderHandFan(GameState state, Player player, ImGuiRenderer r, float zoneW, bool isPlayPhase, int localIdx)
     {
-        var hand   = player.Decks["HandDeck"];
-        var arcana = player.Decks["ArcanaHandDeck"];
+        var hand   = player.Decks[DeckType.HandDeck];
+        var arcana = player.Decks[DeckType.ArcanaHandDeck];
 
         if (hand.Cards.Count == 0 && arcana.Cards.Count == 0)
         {

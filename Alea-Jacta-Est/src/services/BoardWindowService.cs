@@ -1,6 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Alea_Jacta_Est.Commands;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
@@ -23,7 +24,7 @@ public class BoardWindowService
     public void Render(GameState state, ImGuiRenderer imGuiRenderer)
     {
         var player = state.LocalPlayer;
-        var board = player.Decks["BoardDeck0"];
+        var board = player.Decks[DeckType.BoardDeck0];
         bool isPlayPhase = state.CurrentTurnPhase == TurnPhase.PlayPhase;
 
         ImGui.SetNextWindowPos(new Vector2(550, 240), ImGuiCond.FirstUseEver);

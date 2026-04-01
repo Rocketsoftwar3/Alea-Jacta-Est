@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Main;
 using Alea_Jacta_Est.Services;
 
@@ -30,11 +31,11 @@ public class MultiplayerDeckService
 
             // Main deck: 20 random value cards
             for (int i = 0; i < 20; i++)
-                player.Decks["MainDeck"].AddCard(CreateRandomValue(rng));
+                player.Decks[DeckType.MainDeck].AddCard(CreateRandomValue(rng));
 
             // Special deck: 5 arcana cards
             for (int i = 0; i < 5; i++)
-                player.Decks["SpecialDeck"].AddCard(CreateRandomArcana(rng));
+                player.Decks[DeckType.SpecialDeck].AddCard(CreateRandomArcana(rng));
 
             // Market: 6 arcana cards for purchase
             for (int i = 0; i < 6; i++)

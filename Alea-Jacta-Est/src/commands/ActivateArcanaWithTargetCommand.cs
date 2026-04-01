@@ -1,3 +1,4 @@
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Events;
@@ -19,8 +20,8 @@ public record ActivateArcanaWithTargetCommand(
         // Store selected target so effects can read it via state.PendingActivation.SelectedTarget
         state.PendingActivation.SelectedTarget = Target;
 
-        Activator.Decks["ArcanaHandDeck"].RemoveCard(Card);
-        Activator.Decks["ArcanaDiscardDeck"].AddCard(Card);
+        Activator.Decks[DeckType.ArcanaHandDeck].RemoveCard(Card);
+        Activator.Decks[DeckType.ArcanaDiscardDeck].AddCard(Card);
 
         EffectManager.PlayCard(state, Card);
         events.Publish(new CardPlayed(Activator, Card));

@@ -56,8 +56,7 @@ public static class PositionConfig
     /// <summary>Gets the actual deck from a player based on deck type.</summary>
     public static Deck GetDeck(Player player, DeckType deckType)
     {
-        string deckName = deckType.ToString();
-        return player.Decks[deckName];
+        return player.Decks[deckType];
     }
 
     /// <summary>Represents a deck's visual configuration.</summary>

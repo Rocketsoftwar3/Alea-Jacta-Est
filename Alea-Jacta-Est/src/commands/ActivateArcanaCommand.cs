@@ -1,4 +1,5 @@
 using System.Linq;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Events;
@@ -18,8 +19,8 @@ public record ActivateArcanaCommand(Player Player, ArcanaCard Card, Player? Targ
             return;
         }
 
-        Player.Decks["ArcanaHandDeck"].RemoveCard(Card);
-        Player.Decks["ArcanaDiscardDeck"].AddCard(Card);
+        Player.Decks[DeckType.ArcanaHandDeck].RemoveCard(Card);
+        Player.Decks[DeckType.ArcanaDiscardDeck].AddCard(Card);
 
         EffectManager.PlayCard(state, Card);
         events.Publish(new CardPlayed(Player, Card));

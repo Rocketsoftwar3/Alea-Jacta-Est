@@ -1,4 +1,5 @@
 using System.Linq;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 
@@ -14,8 +15,6 @@ namespace Alea_Jacta_Est.Effects;
 /// </summary>
 public class PapesseEffect : ICardEffect
 {
-    private const string TempDeck = "Papesse_Temporary";
-
     // Endroit = Duration 3, Envers = Duration 1
     public int Duration => 3;
 
@@ -27,8 +26,8 @@ public class PapesseEffect : ICardEffect
         if (card.IsUpright)
         {
             // Créer la pile temporaire si elle n'existe pas
-            if (!player.Decks.ContainsKey(TempDeck))
-                player.Decks[TempDeck] = new Deck();
+            if (!player.Decks.ContainsKey(DeckType.PapesseTemporary))
+                player.Decks[DeckType.PapesseTemporary] = new Deck();
         }
         else
         {
@@ -53,11 +52,11 @@ public class PapesseEffect : ICardEffect
 
         // Déplacer toutes les cartes de la main vers la pile temporaire
         // AVANT que CleanupPhase ne les mette à la défausse
-        if (!player.Decks.ContainsKey(TempDeck))
-            player.Decks[TempDeck] = new Deck();
+        if (!player.Decks.ContainsKey(DeckType.PapesseTemporary))
+            player.Decks[DeckType.PapesseTemporary] = new Deck();
 
-        var hand = player.Decks["HandDeck"];
-        var temp = player.Decks[TempDeck];
+        var hand = player.Decks[DeckType.HandDeck];
+        var temp = player.Decks[DeckType.PapesseTemporary];
         temp.AddCards(hand.Cards.ToList());
         hand.Cards.Clear();
     }
@@ -70,10 +69,10 @@ public class PapesseEffect : ICardEffect
         if (card.IsUpright)
         {
             // Retourner la pile temporaire en main pour ce tour
-            if (player.Decks.TryGetValue(TempDeck, out var temp))
+            if (player.Decks.TryGetValue(DeckType.PapesseTemporary, out var temp))
             {
-                player.Decks["HandDeck"].AddCards(temp.Cards.ToList());
-                player.Decks.Remove(TempDeck);
+                player.Decks[DeckType.HandDeck].AddCards(temp.Cards.ToList());
+                player.Decks.Remove(DeckType.PapesseTemporary);
             }
         }
         else

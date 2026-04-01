@@ -12,5 +12,7 @@ public enum DeckType
     BoardDeck3,
     HandDeck,
     ArcanaHandDeck,
-    ArcanaDiscardDeck
+    ArcanaDiscardDeck,
+    PapesseTemporary,
+    RemovedCards
 }

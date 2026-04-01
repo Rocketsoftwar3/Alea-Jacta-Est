@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Events;
@@ -78,28 +79,44 @@ public class TurnService
     {
         if (state.CurrentTurnPhase != TurnPhase.ResolutionPhase) return;
 
-        // Solo: auto-validate all non-local players (AI slots).
-        if (state.IsSinglePlayer)
-        {
-            for (int i = 0; i < state.Players.Count; i++)
-            {
-                if (!state.Players[i].IsLocalPlayer)
-                    state.TurnStates[i].HasValidated = true;
-            }
-        }
+        AutoValidateAIPlayers(state);
 
-        // ── 1. Calculate raw damage per player ───────────────────────────────
+        var ctx = new ResolutionContext { State = state };
+        CalculateRawDamage(ctx);
+        ApplyEmpereurDamageSteal(ctx);
+        DistributeRelativeDamage(ctx);
+        ApplyHpChanges(ctx);
+        ApplyPapeReflection(ctx);
+        ApplyPapeHealing(ctx);
+        StoreReplicatedDamage(ctx);
+        AccumulateTotalDamageDealt(ctx);
+
+        _effectManager.OnTurnEnd(state);
+        PublishResolutionResults(ctx);
+    }
+
+    private static void AutoValidateAIPlayers(GameState state)
+    {
+        if (!state.IsSinglePlayer) return;
+        for (int i = 0; i < state.Players.Count; i++)
+        {
+            if (!state.Players[i].IsLocalPlayer)
+                state.TurnStates[i].HasValidated = true;
+        }
+    }
+
+    private void CalculateRawDamage(ResolutionContext ctx)
+    {
+        var state = ctx.State;
         for (int i = 0; i < state.Players.Count; i++)
         {
             var player = state.Players[i];
             var ts = state.TurnStates[i];
 
-            // In solo mode only the local player has real cards; other slots have none.
             bool hasRealCards = !state.IsSinglePlayer || player.IsLocalPlayer;
 
             if (hasRealCards)
             {
-                // Amoureux envers replicated turn: use stored damage instead of recalculating.
                 if (ts.ReplicatePreviousTurn)
                 {
                     ts.DamageTotal = ts.ReplicatedDamageTotal;
@@ -109,8 +126,8 @@ public class TurnService
                 {
                     float boost = ts.MultiplierDoubled ? 2f : 1f;
                     ts.MultiplierDoubled = false;
-                    ts.DamageTotal = _damageCalc.CalculateDamage(player.Decks["BoardDeck0"].Cards, boost);
-                    ts.MoneyEarned = _damageCalc.CalculateMoney(player.Decks["HandDeck"].Cards);
+                    ts.DamageTotal = _damageCalc.CalculateDamage(player.Decks[DeckType.BoardDeck0].Cards, boost);
+                    ts.MoneyEarned = _damageCalc.CalculateMoney(player.Decks[DeckType.HandDeck].Cards);
                 }
             }
             else
@@ -119,8 +136,11 @@ public class TurnService
                 ts.MoneyEarned = 0;
             }
         }
+    }
 
-        // ── 2. Empereur envers: steal 1/3 of target's damage ─────────────────
+    private static void ApplyEmpereurDamageSteal(ResolutionContext ctx)
+    {
+        var state = ctx.State;
         for (int i = 0; i < state.Players.Count; i++)
         {
             var ts = state.TurnStates[i];
@@ -135,65 +155,83 @@ public class TurnService
             targetTs.DamageTotal = Math.Max(0, targetTs.DamageTotal - stolen);
             ts.DamageTotal += stolen;
         }
+    }
 
-        // ── 3. Distribute damage ──────────────────────────────────────────────
-        int maxDamage = state.TurnStates.Values.Max(ts => ts.DamageTotal);
-        var damageTaken = new Dictionary<int, int>();
+    private static void DistributeRelativeDamage(ResolutionContext ctx)
+    {
+        var state = ctx.State;
+        ctx.MaxDamage = state.TurnStates.Values.Max(ts => ts.DamageTotal);
 
         for (int i = 0; i < state.Players.Count; i++)
-        {
-            damageTaken[i] = Math.Max(0, maxDamage - state.TurnStates[i].DamageTotal);
-        }
+            ctx.DamageTaken[i] = Math.Max(0, ctx.MaxDamage - state.TurnStates[i].DamageTotal);
+    }
 
-        // ── 4. Apply HP changes ───────────────────────────────────────────────
+    private static void ApplyHpChanges(ResolutionContext ctx)
+    {
+        var state = ctx.State;
         for (int i = 0; i < state.Players.Count; i++)
         {
-            state.Players[i].Health -= damageTaken[i];
+            state.Players[i].Health -= ctx.DamageTaken[i];
             state.Players[i].Wallet += state.TurnStates[i].MoneyEarned;
         }
+    }
 
-        // ── 5. Pape envers: reflect half damage back to attacker ─────────────
-        int attackerIdx = Array.IndexOf(
+    private static void ApplyPapeReflection(ResolutionContext ctx)
+    {
+        var state = ctx.State;
+        ctx.AttackerIndex = Array.IndexOf(
             Enumerable.Range(0, state.Players.Count)
                 .Select(i => state.TurnStates[i].DamageTotal)
                 .ToArray(),
-            maxDamage);
+            ctx.MaxDamage);
 
         for (int i = 0; i < state.Players.Count; i++)
         {
             if (!state.TurnStates[i].ReflectDamage) continue;
-            if (damageTaken[i] <= 0) continue;
+            if (ctx.DamageTaken[i] <= 0) continue;
 
-            int reflected = damageTaken[i] / 2;
-            if (attackerIdx >= 0 && attackerIdx < state.Players.Count && attackerIdx != i)
-                state.Players[attackerIdx].Health -= reflected;
+            int reflected = ctx.DamageTaken[i] / 2;
+            if (ctx.AttackerIndex >= 0 && ctx.AttackerIndex < state.Players.Count && ctx.AttackerIndex != i)
+                state.Players[ctx.AttackerIndex].Health -= reflected;
         }
+    }
 
-        // ── 6. Pape endroit: heal by total damage dealt to opponents ──────────
+    private static void ApplyPapeHealing(ResolutionContext ctx)
+    {
+        var state = ctx.State;
         for (int i = 0; i < state.Players.Count; i++)
         {
             if (!state.TurnStates[i].HealFromDamageDealt) continue;
 
             int healAmount = 0;
             for (int j = 0; j < state.Players.Count; j++)
-                if (j != i) healAmount += damageTaken[j];
+                if (j != i) healAmount += ctx.DamageTaken[j];
 
             state.Players[i].Health += healAmount;
         }
+    }
 
-        // ── 7. Store replicated damage for Amoureux envers ───────────────────
+    private static void StoreReplicatedDamage(ResolutionContext ctx)
+    {
+        var state = ctx.State;
         for (int i = 0; i < state.Players.Count; i++)
             state.TurnStates[i].ReplicatedDamageTotal = state.TurnStates[i].DamageTotal;
+    }
 
-        // ── 8. Accumulate TotalDamageDealt ────────────────────────────────────
+    private static void AccumulateTotalDamageDealt(ResolutionContext ctx)
+    {
+        var state = ctx.State;
         for (int i = 0; i < state.Players.Count; i++)
             state.TurnStates[i].TotalDamageDealt += state.TurnStates[i].DamageTotal;
+    }
 
-        _effectManager.OnTurnEnd(state);
+    private void PublishResolutionResults(ResolutionContext ctx)
+    {
+        var state = ctx.State;
 
         _events.Publish(new RoundResolved(
             Enumerable.Range(0, state.Players.Count)
-                .ToDictionary(i => state.Players[i], i => damageTaken[i])));
+                .ToDictionary(i => state.Players[i], i => ctx.DamageTaken[i])));
 
         foreach (var player in state.Players.ToList())
             if (player.Health <= 0)
@@ -213,11 +251,11 @@ public class TurnService
 
         foreach (var player in state.Players)
         {
-            var hand = player.Decks["HandDeck"];
-            var arcanaHand = player.Decks["ArcanaHandDeck"];
-            var board = player.Decks["BoardDeck0"];
-            var discard = player.Decks["DiscardDeck"];
-            var arcanaDiscard = player.Decks["ArcanaDiscardDeck"];
+            var hand = player.Decks[DeckType.HandDeck];
+            var arcanaHand = player.Decks[DeckType.ArcanaHandDeck];
+            var board = player.Decks[DeckType.BoardDeck0];
+            var discard = player.Decks[DeckType.DiscardDeck];
+            var arcanaDiscard = player.Decks[DeckType.ArcanaDiscardDeck];
 
             // Papesse endroit: OnTurnEnd already moved hand → Papesse_Temporary
             // so hand may already be empty here — just clear whatever is left
@@ -238,9 +276,9 @@ public class TurnService
 
     private static void DrawValueCards(Player player, int count)
     {
-        var mainDeck = player.Decks["MainDeck"];
-        var hand = player.Decks["HandDeck"];
-        var discard = player.Decks["DiscardDeck"];
+        var mainDeck = player.Decks[DeckType.MainDeck];
+        var hand = player.Decks[DeckType.HandDeck];
+        var discard = player.Decks[DeckType.DiscardDeck];
 
         if (mainDeck.Cards.Count < count && discard.Cards.Count > 0)
         {
@@ -259,9 +297,9 @@ public class TurnService
 
     private static void DrawArcanaCard(Player player)
     {
-        var specialDeck = player.Decks["SpecialDeck"];
-        var arcanaHand = player.Decks["ArcanaHandDeck"];
-        var arcanaDiscard = player.Decks["ArcanaDiscardDeck"];
+        var specialDeck = player.Decks[DeckType.SpecialDeck];
+        var arcanaHand = player.Decks[DeckType.ArcanaHandDeck];
+        var arcanaDiscard = player.Decks[DeckType.ArcanaDiscardDeck];
 
         if (specialDeck.Cards.Count == 0 && arcanaDiscard.Cards.Count > 0)
         {
@@ -276,8 +314,8 @@ public class TurnService
 
     private static void DrawArcanaCardFromDiscard(Player player)
     {
-        var arcanaDiscard = player.Decks["ArcanaDiscardDeck"];
-        var arcanaHand = player.Decks["ArcanaHandDeck"];
+        var arcanaDiscard = player.Decks[DeckType.ArcanaDiscardDeck];
+        var arcanaHand = player.Decks[DeckType.ArcanaHandDeck];
 
         if (arcanaDiscard.Cards.Count == 0)
         {
@@ -297,8 +335,8 @@ public class TurnService
     /// <summary>Chariot envers: auto-move all value cards from hand to board.</summary>
     private static void AutoPlayAllPointCards(Player player)
     {
-        var hand = player.Decks["HandDeck"];
-        var board = player.Decks["BoardDeck0"];
+        var hand = player.Decks[DeckType.HandDeck];
+        var board = player.Decks[DeckType.BoardDeck0];
 
         var valueCards = hand.Cards.OfType<ValueCard>().ToList();
         foreach (var card in valueCards)

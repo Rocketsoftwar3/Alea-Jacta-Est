@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Events;
 using Alea_Jacta_Est.Main;
 using Alea_Jacta_Est.Services;
@@ -20,12 +22,16 @@ public record NewGameCommand(DemoDataService DemoData) : IGameCommand
             foreach (var deck in player.Decks.Values)
                 deck.Cards.Clear();
 
-            // Remove any temporary decks (e.g. Papesse_Temporary, RemovedCards)
-            var extraKeys = new System.Collections.Generic.List<string>();
+            // Remove any temporary decks (e.g. PapesseTemporary, RemovedCards)
+            var standardSlots = new HashSet<DeckType>
+            {
+                DeckType.MainDeck, DeckType.DiscardDeck, DeckType.HandDeck,
+                DeckType.SpecialDeck, DeckType.ArcanaHandDeck, DeckType.ArcanaDiscardDeck,
+                DeckType.BoardDeck0, DeckType.BoardDeck1, DeckType.BoardDeck2, DeckType.BoardDeck3
+            };
+            var extraKeys = new List<DeckType>();
             foreach (var key in player.Decks.Keys)
-                if (key is not ("MainDeck" or "DiscardDeck" or "HandDeck"
-                    or "SpecialDeck" or "ArcanaHandDeck" or "ArcanaDiscardDeck"
-                    or "BoardDeck0"))
+                if (!standardSlots.Contains(key))
                     extraKeys.Add(key);
             foreach (var key in extraKeys)
                 player.Decks.Remove(key);
