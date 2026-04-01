@@ -28,9 +28,9 @@ public class MarketWindowService
         var player = state.LocalPlayer;
         var market = player.Market;
 
-        ImGui.SetNextWindowSize(new Vector2(340, 380), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(new Vector2(480, 520), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowPos(new Vector2(250, 120), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSizeConstraints(new Vector2(260, 200), new Vector2(500, 600));
+        ImGui.SetNextWindowSizeConstraints(new Vector2(300, 300), new Vector2(700, 800));
 
         if (!ImGui.Begin("Marché", ref isOpen))
         {
@@ -93,12 +93,37 @@ public class MarketWindowService
                 ImGui.TableNextColumn();
                 var texId = imGuiRenderer.GetOrBindTexture(card.TextureRecto);
                 ImGui.Image(texId, CardThumbSize);
+                if (ImGui.IsItemHovered())
+                    CardTooltip(imGuiRenderer, card);
 
-                // Col 1 — name
+                // Col 1 — name + description
                 ImGui.TableNextColumn();
-                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (CardThumbSize.Y * 0.5f - ImGui.GetTextLineHeight() * 0.5f));
-                string name = FormatTextureName(card.TextureRecto.Name);
-                ImGui.TextUnformatted(name);
+                ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 4f);
+                if (card is ArcanaCard ac)
+                {
+                    ImGui.TextUnformatted($"{ac.ArcanaNumber} — {ac.ArcanaName}");
+                    ImGui.TextColored(ac.IsUpright
+                        ? new Vector4(0.4f, 0.9f, 1f, 1f)
+                        : new Vector4(1f, 0.5f, 0.3f, 1f),
+                        ac.IsUpright ? "Endroit" : "Envers");
+                    string desc = ac.IsUpright ? ac.DescriptionEndroit : ac.DescriptionEnvers;
+                    if (!string.IsNullOrEmpty(desc))
+                    {
+                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 200f);
+                        ImGui.TextDisabled(desc);
+                        ImGui.PopTextWrapPos();
+                    }
+                }
+                else if (card is ValueCard vc)
+                {
+                    ImGui.TextUnformatted(vc.DisplayName);
+                    ImGui.TextDisabled($"{vc.Suit}");
+                }
+                else
+                {
+                    string name = FormatTextureName(card.TextureRecto.Name);
+                    ImGui.TextUnformatted(name);
+                }
                 if (card.Price != price)
                 {
                     ImGui.TextDisabled($"(base : {card.Price})");
@@ -207,6 +232,40 @@ public class MarketWindowService
         }
 
         ImGui.End();
+    }
+
+    private static void CardTooltip(ImGuiRenderer r, Card card)
+    {
+        ImGui.BeginTooltip();
+        ImGui.Image(r.GetOrBindTexture(card.TextureRecto), new Vector2(108, 180));
+        ImGui.Separator();
+        if (card is ValueCard vc)
+        {
+            ImGui.TextUnformatted(vc.DisplayName);
+            if (vc.IsFaceCard)
+                ImGui.TextDisabled($"Multiplicateur: x{vc.Multiplier}");
+            else
+                ImGui.TextDisabled($"Valeur: {vc.DamageValue} degats");
+            ImGui.TextDisabled($"Enseigne: {vc.Suit}");
+        }
+        else if (card is ArcanaCard ac)
+        {
+            ImGui.TextUnformatted($"{ac.ArcanaNumber} - {ac.ArcanaName}");
+            ImGui.TextColored(ac.IsUpright
+                ? new Vector4(0.4f, 0.9f, 1f, 1f)
+                : new Vector4(1f, 0.5f, 0.3f, 1f),
+                ac.IsUpright ? "Endroit" : "Envers");
+            ImGui.Separator();
+            string desc = ac.IsUpright ? ac.DescriptionEndroit : ac.DescriptionEnvers;
+            if (!string.IsNullOrEmpty(desc))
+            {
+                ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 220f);
+                ImGui.TextWrapped(desc);
+                ImGui.PopTextWrapPos();
+            }
+            if (ac.Price > 0) ImGui.TextDisabled($"Prix: {ac.Price}");
+        }
+        ImGui.EndTooltip();
     }
 
     private static string FormatTextureName(string texturePath)

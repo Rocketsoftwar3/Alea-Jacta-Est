@@ -1,5 +1,3 @@
-using System.Linq;
-using Alea_Jacta_Est.Config;
 using Alea_Jacta_Est.Entities;
 using Alea_Jacta_Est.Main;
 
@@ -7,15 +5,12 @@ namespace Alea_Jacta_Est.Effects;
 
 /// <summary>
 /// La Papesse - II
-/// Endroit (3 tours) : Les cartes gardées en main à la fin de chaque manche vont dans une pile à part
-///                     (pas à la défausse). +5 pièces/tour. Au 4e tour, la pile retourne en main.
-///                     Ces cartes comptent quand même pour le gain d'argent.
-/// Envers  (1 tour)  : Le tour suivant, tous les adversaires voient leurs cartes uniquement par
+/// Endroit (3 tours) : La main est préservée (pas de défausse) et +5 pièces/tour.
+/// Envers  (1 tour)  : Tous les adversaires voient leurs cartes uniquement par
 ///                     leur valeur monétaire.
 /// </summary>
 public class PapesseEffect : ICardEffect
 {
-    // Endroit = Duration 3, Envers = Duration 1
     public int Duration => 3;
 
     public void OnPlay(GameState state, ArcanaCard card)
@@ -23,16 +18,8 @@ public class PapesseEffect : ICardEffect
         var player = state.CurrentPlayer;
         if (player == null) return;
 
-        if (card.IsUpright)
+        if (!card.IsUpright)
         {
-            // Créer la pile temporaire si elle n'existe pas
-            if (!player.Decks.ContainsKey(DeckType.PapesseTemporary))
-                player.Decks[DeckType.PapesseTemporary] = new Deck();
-        }
-        else
-        {
-            // Envers: durée effective = 1 tour — on coupe court via OnRemove immédiat.
-            // Signaler aux adversaires qu'ils sont en mode "valeur monétaire uniquement".
             int localIdx = state.Players.IndexOf(player);
             foreach (var (idx, ts) in state.TurnStates)
                 if (idx != localIdx)
@@ -47,37 +34,19 @@ public class PapesseEffect : ICardEffect
         var player = state.CurrentPlayer;
         if (player == null) return;
 
+        // Flag cleanup phase to skip discarding this player's hand
+        int playerIdx = state.Players.IndexOf(player);
+        if (state.TurnStates.TryGetValue(playerIdx, out var ts))
+            ts.SkipHandDiscard = true;
+
         // +5 pièces par tour
         player.Wallet += 5;
-
-        // Déplacer toutes les cartes de la main vers la pile temporaire
-        // AVANT que CleanupPhase ne les mette à la défausse
-        if (!player.Decks.ContainsKey(DeckType.PapesseTemporary))
-            player.Decks[DeckType.PapesseTemporary] = new Deck();
-
-        var hand = player.Decks[DeckType.HandDeck];
-        var temp = player.Decks[DeckType.PapesseTemporary];
-        temp.AddCards(hand.Cards.ToList());
-        hand.Cards.Clear();
     }
 
     public void OnRemove(GameState state, ArcanaCard card)
     {
-        var player = state.CurrentPlayer;
-        if (player == null) return;
-
-        if (card.IsUpright)
+        if (!card.IsUpright)
         {
-            // Retourner la pile temporaire en main pour ce tour
-            if (player.Decks.TryGetValue(DeckType.PapesseTemporary, out var temp))
-            {
-                player.Decks[DeckType.HandDeck].AddCards(temp.Cards.ToList());
-                player.Decks.Remove(DeckType.PapesseTemporary);
-            }
-        }
-        else
-        {
-            // Fin de l'effet envers : retirer le flag sur tous les adversaires
             foreach (var ts in state.TurnStates.Values)
                 ts.HandVisibleAsMoneyOnly = false;
         }

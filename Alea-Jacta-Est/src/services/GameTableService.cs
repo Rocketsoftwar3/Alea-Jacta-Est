@@ -374,7 +374,9 @@ public class GameTableService
 
             if (IsMouseInRotatedRect(mousePos, center, CardBoard.X, CardBoard.Y, 0f))
             {
-                CardTooltip(r, card);
+                int pidx = state.Players.IndexOf(player);
+                bool md2 = state.TurnStates.TryGetValue(pidx, out var mts2) && mts2.MultiplierDoubled;
+                CardTooltip(r, card, md2);
                 if (clicked && isPlayPhase && card is ValueCard vc) { toTake.Add(vc); clicked = false; }
             }
         }
@@ -680,7 +682,8 @@ public class GameTableService
         {
             if (!IsMouseInRotatedRect(mousePos, positions[i].center, CardFan.X, CardFan.Y, positions[i].angle))
                 continue;
-            CardTooltip(r, hand.Cards[i]);
+            bool md = state.TurnStates.TryGetValue(localIdx, out var mts) && mts.MultiplierDoubled;
+            CardTooltip(r, hand.Cards[i], md);
             if (clicked && isPlayPhase && hand.Cards[i] is ValueCard vc)
             {
                 toPlay.Add(vc);
@@ -752,7 +755,7 @@ public class GameTableService
     // Tooltip
     // ────────────────────────────────────────────────────────────────
 
-    private static void CardTooltip(ImGuiRenderer r, Card card)
+    private static void CardTooltip(ImGuiRenderer r, Card card, bool multiplierDoubled = false)
     {
         ImGui.BeginTooltip();
         ImGui.Image(r.GetOrBindTexture(card.TextureRecto), new Vector2(108, 180));
@@ -761,7 +764,10 @@ public class GameTableService
         {
             ImGui.TextUnformatted(vc.DisplayName);
             if (vc.IsFaceCard)
-                ImGui.TextDisabled($"Multiplicateur: x{vc.Multiplier}");
+            {
+                float displayMult = multiplierDoubled ? vc.Multiplier * 2 : vc.Multiplier;
+                ImGui.TextDisabled($"Multiplicateur: x{displayMult}");
+            }
             else
                 ImGui.TextDisabled($"Valeur: {vc.DamageValue} degats");
             ImGui.TextDisabled($"Enseigne: {vc.Suit}");

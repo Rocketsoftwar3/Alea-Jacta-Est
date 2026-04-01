@@ -123,13 +123,12 @@ public class Game1 : Game
         _gameRenderer  = new GameRenderer(_gfx);
         _effectManager = new EffectManager(_eventBus);
         _damageCalc    = new DamageCalculationService();
-        _turnService   = new TurnService(_effectManager, _damageCalc, _eventBus);
+        _cardFactory   = new CardFactory(_gfx);
+        _turnService   = new TurnService(_effectManager, _damageCalc, _cardFactory, _eventBus);
 
         _eventBus.Subscribe<Events.CardPlacedOnBoard>(_ => _gameRenderer.TriggerShake());
         _eventBus.Subscribe<Events.CardPlayed>(_ => _gameRenderer.TriggerShake());
         _eventBus.Subscribe<Events.TurnValidated>(_ => _gameRenderer.TriggerShake());
-
-        _cardFactory  = new CardFactory(_gfx);
         _demoData     = new DemoDataService(_cardFactory, _gfx);
 
         // Network / lobby (created before services so _netCommandQueue can be passed)

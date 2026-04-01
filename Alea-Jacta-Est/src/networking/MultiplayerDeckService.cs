@@ -37,8 +37,8 @@ public class MultiplayerDeckService
             for (int i = 0; i < 5; i++)
                 player.Decks[DeckType.SpecialDeck].AddCard(CreateRandomArcana(rng));
 
-            // Market: 6 arcana cards for purchase
-            for (int i = 0; i < 6; i++)
+            // Market: 12 arcana cards for purchase
+            for (int i = 0; i < 12; i++)
                 player.Market.Deck.AddCard(CreateRandomArcana(rng));
         }
     }

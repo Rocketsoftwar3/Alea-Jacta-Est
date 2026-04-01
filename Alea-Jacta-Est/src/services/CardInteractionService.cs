@@ -108,7 +108,12 @@ public class CardInteractionService
                         ImGui.TextUnformatted(vc.DisplayName);
                         ImGui.Separator();
                         if (vc.IsFaceCard)
-                            ImGui.TextUnformatted($"Multiplicateur : x{vc.Multiplier}");
+                        {
+                            int li = state.Players.IndexOf(state.LocalPlayer);
+                            bool db = state.TurnStates.TryGetValue(li, out var mts) && mts.MultiplierDoubled;
+                            float dm = db ? vc.Multiplier * 2 : vc.Multiplier;
+                            ImGui.TextUnformatted($"Multiplicateur : x{dm}");
+                        }
                         else
                             ImGui.TextUnformatted($"Valeur : {vc.DamageValue}");
                         ImGui.TextUnformatted($"Enseigne : {vc.Suit}");

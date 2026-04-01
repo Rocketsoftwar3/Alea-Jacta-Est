@@ -90,7 +90,12 @@ public class HandWindowService
                 ImGui.TableNextColumn();
                 ImGui.SetCursorPosY(ImGui.GetCursorPosY() + (CardThumbSize.Y * 0.5f - ImGui.GetTextLineHeight() * 0.5f));
                 if (card is ValueCard vv)
-                    ImGui.TextUnformatted(vv.IsFaceCard ? $"x{vv.Multiplier}" : $"{vv.DamageValue}");
+                {
+                    int localI = state.Players.IndexOf(player);
+                    bool doubled = state.TurnStates.TryGetValue(localI, out var mts) && mts.MultiplierDoubled;
+                    float displayMult = doubled ? vv.Multiplier * 2 : vv.Multiplier;
+                    ImGui.TextUnformatted(vv.IsFaceCard ? $"x{displayMult}" : $"{vv.DamageValue}");
+                }
                 else
                     ImGui.TextDisabled("-");
 

@@ -37,6 +37,9 @@ public class PlayerTurnState
     public bool DrawFromArcanaDiscard { get; set; }
 
     // ── Papesse ───────────────────────────────────────────────────────────────
+    /// <summary>Endroit: skip discarding hand cards during cleanup phase.</summary>
+    public bool SkipHandDiscard { get; set; }
+
     /// <summary>Envers: this player's hand is shown only as monetary values to opponents.</summary>
     public bool HandVisibleAsMoneyOnly { get; set; }
 
@@ -58,6 +61,9 @@ public class PlayerTurnState
     public bool BlockArcanaNextTurn { get; set; }
 
     // ── Amoureux ─────────────────────────────────────────────────────────────
+    /// <summary>Endroit: signal to add a random arcana card to this player's market.</summary>
+    public bool AmoureuxShopPending { get; set; }
+
     /// <summary>Envers: this player's damage next resolution = ReplicatedDamageTotal.</summary>
     public bool ReplicatePreviousTurn { get; set; }
 
@@ -81,12 +87,14 @@ public class PlayerTurnState
         ReflectDamage = false;
         CanSeeOpponentHands = false;
         DrawFromArcanaDiscard = false;
+        SkipHandDiscard = false;
         HandVisibleAsMoneyOnly = false;
         MaxArcanasPerTurn = int.MaxValue;
         ArcanasPlayedThisTurn = 0;
         MustPlayAllPointCards = false;
         BlockedPointCardDraws = 0;
         BlockArcanaNextTurn = false;
+        AmoureuxShopPending = false;
         ReplicatePreviousTurn = false;
         ReplicatedDamageTotal = 0;
     }

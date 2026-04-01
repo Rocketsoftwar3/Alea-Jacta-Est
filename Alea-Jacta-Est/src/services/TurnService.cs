@@ -13,12 +13,14 @@ public class TurnService
 {
     private readonly EffectManager _effectManager;
     private readonly DamageCalculationService _damageCalc;
+    private readonly CardFactory _cardFactory;
     private readonly EventBus _events;
 
-    public TurnService(EffectManager effectManager, DamageCalculationService damageCalc, EventBus events)
+    public TurnService(EffectManager effectManager, DamageCalculationService damageCalc, CardFactory cardFactory, EventBus events)
     {
         _effectManager = effectManager;
         _damageCalc = damageCalc;
+        _cardFactory = cardFactory;
         _events = events;
     }
 
@@ -27,6 +29,14 @@ public class TurnService
     public void ExecuteDrawPhase(GameState state)
     {
         if (state.CurrentTurnPhase != TurnPhase.DrawPhase) return;
+
+        // Restock market with fresh cards each turn
+        foreach (var player in state.Players)
+        {
+            player.Market.Deck.Cards.Clear();
+            for (int j = 0; j < 12; j++)
+                player.Market.Deck.AddCard(_cardFactory.BuildRandom());
+        }
 
         _effectManager.OnTurnStart(state);
 
@@ -92,6 +102,17 @@ public class TurnService
         AccumulateTotalDamageDealt(ctx);
 
         _effectManager.OnTurnEnd(state);
+
+        // Amoureux endroit: add a random arcana card to the player's market
+        for (int i = 0; i < state.Players.Count; i++)
+        {
+            if (state.TurnStates.TryGetValue(i, out var ats) && ats.AmoureuxShopPending)
+            {
+                state.Players[i].Market.Deck.AddCard(_cardFactory.BuildRandom());
+                ats.AmoureuxShopPending = false;
+            }
+        }
+
         PublishResolutionResults(ctx);
     }
 
@@ -249,23 +270,23 @@ public class TurnService
     {
         if (state.CurrentTurnPhase != TurnPhase.CleanupPhase) return;
 
-        foreach (var player in state.Players)
+        for (int i = 0; i < state.Players.Count; i++)
         {
+            var player = state.Players[i];
             var hand = player.Decks[DeckType.HandDeck];
-            var arcanaHand = player.Decks[DeckType.ArcanaHandDeck];
             var board = player.Decks[DeckType.BoardDeck0];
             var discard = player.Decks[DeckType.DiscardDeck];
-            var arcanaDiscard = player.Decks[DeckType.ArcanaDiscardDeck];
 
-            // Papesse endroit: OnTurnEnd already moved hand → Papesse_Temporary
-            // so hand may already be empty here — just clear whatever is left
             discard.AddCards(board.Cards.ToList());
             board.Cards.Clear();
 
-            discard.AddCards(hand.Cards.ToList());
-            hand.Cards.Clear();
-
-            // Arcana cards stay in hand between turns — only played ones were already moved to arcanaDiscard
+            // Papesse endroit: SkipHandDiscard preserves the hand
+            bool skipHand = state.TurnStates.TryGetValue(i, out var ts) && ts.SkipHandDiscard;
+            if (!skipHand)
+            {
+                discard.AddCards(hand.Cards.ToList());
+                hand.Cards.Clear();
+            }
         }
 
         state.AdvanceTurnPhase(); // CleanupPhase → ShopPhase
@@ -338,8 +359,8 @@ public class TurnService
         var hand = player.Decks[DeckType.HandDeck];
         var board = player.Decks[DeckType.BoardDeck0];
 
-        var valueCards = hand.Cards.OfType<ValueCard>().ToList();
-        foreach (var card in valueCards)
+        var pointCards = hand.Cards.OfType<ValueCard>().Where(c => !c.IsFaceCard).ToList();
+        foreach (var card in pointCards)
         {
             hand.RemoveCard(card);
             board.AddCard(card);

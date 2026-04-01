@@ -22,7 +22,7 @@ public record NewGameCommand(DemoDataService DemoData) : IGameCommand
             foreach (var deck in player.Decks.Values)
                 deck.Cards.Clear();
 
-            // Remove any temporary decks (e.g. PapesseTemporary, RemovedCards)
+            // Remove any temporary decks (e.g. RemovedCards)
             var standardSlots = new HashSet<DeckType>
             {
                 DeckType.MainDeck, DeckType.DiscardDeck, DeckType.HandDeck,

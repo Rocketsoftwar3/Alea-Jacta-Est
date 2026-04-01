@@ -28,8 +28,8 @@ public class DemoDataService
         for (int i = 0; i < 5; i++)
             localPlayer.Decks[DeckType.SpecialDeck].AddCard(_cardFactory.BuildRandom());
 
-        // Market: 6 arcana cards for purchase
-        for (int i = 0; i < 6; i++)
+        // Market: 12 arcana cards for purchase
+        for (int i = 0; i < 12; i++)
             localPlayer.Market.Deck.AddCard(_cardFactory.BuildRandom());
 
         // Add 3 opponent players (MaxPlayers=4, so 3 opponents)

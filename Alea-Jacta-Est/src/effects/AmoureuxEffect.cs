@@ -38,11 +38,11 @@ public class AmoureuxEffect : ICardEffect
         int loss = (int)Math.Ceiling(player.Health / 4.0);
         player.Health -= loss;
 
-        // TODO: laisser le joueur choisir l'arcanique à ajouter
-        // Pour l'instant : ajoute une carte arcanique aléatoire dans la boutique
-        // (le CardFactory n'est pas accessible ici — on met juste un signal via état)
-        // WORKAROUND : on n'a pas accès à CardFactory depuis les effets.
-        // L'UI pourrait intercepter le flag AmoureuxShopPending pour proposer le choix.
+        // Signal TurnService to add a random arcana card to the market
+        // TODO: laisser le joueur choisir l'arcanique via UI
+        int idx = state.Players.IndexOf(player);
+        if (state.TurnStates.TryGetValue(idx, out var ts))
+            ts.AmoureuxShopPending = true;
     }
 
     private static void ResolveEnvers(GameState state)
