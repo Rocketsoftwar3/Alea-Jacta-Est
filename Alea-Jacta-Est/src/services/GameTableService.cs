@@ -281,6 +281,48 @@ public class GameTableService
                 dl.AddLine(new Vector2(cwMax.X, cwMin.Y), new Vector2(cwMin.X, cwMax.Y), crossCol, 8f);
             }
 
+            // ── Target selection overlay ─────────────────────────────
+            if (state.PendingActivation != null && opp.Health > 0)
+            {
+                var wMin = ImGui.GetWindowPos();
+                var wMax = wMin + ImGui.GetWindowSize();
+                var mousePos = ImGui.GetIO().MousePos;
+                bool isHov = mousePos.X >= wMin.X && mousePos.X <= wMax.X
+                          && mousePos.Y >= wMin.Y && mousePos.Y <= wMax.Y;
+
+                float time = (float)ImGui.GetTime();
+                float pulse = 0.5f + 0.3f * MathF.Sin(time * 4f);
+
+                // Pulsing border
+                uint borderCol = isHov
+                    ? ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.85f, 0.1f, 1f))
+                    : ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.7f, 0.1f, pulse));
+                dl.AddRect(wMin, wMax, borderCol, 0f, 0, isHov ? 3f : 2f);
+
+                // Tinted overlay on hover
+                if (isHov)
+                {
+                    uint tint = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.9f, 0.2f, 0.12f));
+                    dl.AddRectFilled(wMin, wMax, tint);
+                }
+
+                // "CIBLER" label
+                string targetLabel = isHov ? ">> CIBLER <<" : "CIBLER";
+                var lblSize = ImGui.CalcTextSize(targetLabel);
+                var lblPos = new Vector2(wMin.X + (wMax.X - wMin.X - lblSize.X) / 2f, wMax.Y - lblSize.Y - 4f);
+                uint lblCol = ImGui.ColorConvertFloat4ToU32(isHov
+                    ? new Vector4(1f, 1f, 0.4f, 1f)
+                    : new Vector4(1f, 0.9f, 0.2f, pulse));
+                dl.AddText(lblPos, lblCol, targetLabel);
+
+                // Click to select target
+                if (isHov && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    var p = state.PendingActivation;
+                    _commands.Enqueue(new ActivateArcanaWithTargetCommand(p.Activator, p.Card, opp, _effectManager));
+                }
+            }
+
             ImGui.EndChild();
         }
     }
@@ -455,28 +497,54 @@ public class GameTableService
 
         ImGui.Separator();
 
-        // ── Action button (single smart) + Boutique ──────────────────
+        // ── Buttons: action left | right-aligned column ──────────────
         bool isActionPhase = (isPlayPhase && !alreadyVal) || isShopPhase;
         string actionLabel = isShopPhase ? "Fin de boutique" : "Valider le tour";
-
         Vector4 btnColor = isShopPhase ? new Vector4(0.60f, 0.35f, 0.08f, 1f) : new Vector4(0.15f, 0.60f, 0.25f, 1f);
+        string boutiqueLabel = marketOpen ? "Fermer" : "Boutique";
+        bool targeting = state.PendingActivation != null;
 
-        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_action", actionLabel, new Vector2(160, 30), btnColor, !isActionPhase))
+        const float btnH = 30f;
+        const float rightColW = 140f;
+        const float gap = 4f;
+        float availW = ImGui.GetContentRegionAvail().X;
+        var rowOrigin = ImGui.GetCursorPos();
+        float rightX = rowOrigin.X + availW - rightColW;
+
+        // Left: main action button
+        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_action", actionLabel, new Vector2(availW - rightColW - 12f, btnH), btnColor, !isActionPhase))
         {
             if (isShopPhase) _commands.Enqueue(new EndShopPhaseCommand(localIdx));
             else             _commands.Enqueue(new ValidateTurnCommand(localIdx));
         }
 
-        ImGui.SameLine(0, 8);
-        string boutiqueLabel = marketOpen ? "Fermer" : "Boutique";
-        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_shop", boutiqueLabel, new Vector2(90, 30), new Vector4(0.2f, 0.3f, 0.6f, 1f), false))
+        // Right column: stacked buttons, all same width, positioned absolutely
+        ImGui.SetCursorPos(new Vector2(rightX, rowOrigin.Y));
+        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_shop", boutiqueLabel, new Vector2(rightColW, btnH), new Vector4(0.2f, 0.3f, 0.6f, 1f), false))
             marketOpen = !marketOpen;
 
-        // ── Target selection ─────────────────────────────────────────
-        if (state.PendingActivation != null)
+        if (targeting)
         {
-            ImGui.Separator();
-            RenderTargetSelection(state);
+            var pending = state.PendingActivation!;
+
+            ImGui.SetCursorPos(new Vector2(rightX, rowOrigin.Y + btnH + gap));
+            if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_self", "Se cibler soi", new Vector2(rightColW, btnH), new Vector4(0.6f, 0.5f, 0.1f, 1f), false))
+                _commands.Enqueue(new ActivateArcanaWithTargetCommand(pending.Activator, pending.Card, pending.Activator, _effectManager));
+
+            ImGui.SetCursorPos(new Vector2(rightX, rowOrigin.Y + (btnH + gap) * 2f));
+            if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_cancel", "Annuler", new Vector2(rightColW, btnH), new Vector4(0.5f, 0.15f, 0.15f, 1f), false))
+                state.PendingActivation = null;
+
+            // Banner reminder
+            var dlLocal = ImGui.GetWindowDrawList();
+            var bannerPos = ImGui.GetWindowPos() + new Vector2(0, 2);
+            string bannerTxt = $"CIBLE REQUISE : {pending.Card.ArcanaName} ({(pending.Card.IsUpright ? "Endroit" : "Envers")}) — Cliquer sur un adversaire";
+            var bannerSize = ImGui.CalcTextSize(bannerTxt);
+            float bannerX = bannerPos.X + (ImGui.GetWindowSize().X - bannerSize.X) / 2f;
+            float time = (float)ImGui.GetTime();
+            float pulse = 0.7f + 0.3f * MathF.Sin(time * 3f);
+            uint bannerCol = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.9f, 0.2f, pulse));
+            dlLocal.AddText(new Vector2(bannerX, bannerPos.Y), bannerCol, bannerTxt);
         }
 
         ImGui.EndChild();
@@ -695,35 +763,6 @@ public class GameTableService
     }
 
     // ────────────────────────────────────────────────────────────────
-    // Target selection inline
-    // ────────────────────────────────────────────────────────────────
-
-    private void RenderTargetSelection(GameState state)
-    {
-        var p = state.PendingActivation!;
-        ImGui.TextColored(new Vector4(1f, 0.9f, 0.2f, 1f), "CHOISIR UNE CIBLE --");
-        ImGui.SameLine(0, 8);
-        ImGui.TextDisabled($"{p.Card.ArcanaName} ({(p.Card.IsUpright ? "Endroit" : "Envers")})");
-        ImGui.Spacing();
-
-        for (int i = 0; i < state.Players.Count; i++)
-        {
-            var t = state.Players[i];
-            float f = Math.Clamp(t.Health / 100f, 0f, 1f);
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, HpColor(f));
-            ImGui.ProgressBar(f, new Vector2(60, 10), "");
-            ImGui.PopStyleColor();
-            ImGui.SameLine(0, 4);
-            string lbl = t == p.Activator
-                ? $"{t.Name} (toi)  {t.Health}PV##{i}"
-                : $"{t.Name}  {t.Health}PV##{i}";
-            if (ImGui.Button(lbl)) _commands.Enqueue(new ActivateArcanaWithTargetCommand(p.Activator, p.Card, t, _effectManager));
-            ImGui.SameLine(0, 12);
-        }
-
-        if (ImGui.Button("Annuler")) state.PendingActivation = null;
-    }
-
     // ────────────────────────────────────────────────────────────────
     // DrawList helpers
     // ────────────────────────────────────────────────────────────────
