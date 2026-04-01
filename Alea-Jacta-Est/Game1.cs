@@ -96,6 +96,16 @@ public class Game1 : Game
 
     protected override void LoadContent()
     {
+        // Diagnostic — write paths to a log file next to the exe
+        var diagPath = Path.Combine(AppContext.BaseDirectory, "diag.txt");
+        File.WriteAllText(diagPath,
+            $"AppContext.BaseDirectory: {AppContext.BaseDirectory}\n" +
+            $"Environment.CurrentDirectory: {Environment.CurrentDirectory}\n" +
+            $"Content.RootDirectory: {Content.RootDirectory}\n" +
+            $"Content dir exists: {Directory.Exists(Path.Combine(AppContext.BaseDirectory, "Content"))}\n" +
+            $"main_background exists: {File.Exists(Path.Combine(AppContext.BaseDirectory, "Content", "main_background.xnb"))}\n" +
+            $"TitleContainer check: {Microsoft.Xna.Framework.TitleContainer.OpenStream("Content/main_background.xnb") != null}\n");
+
         var spriteBatch   = new SpriteBatch(GraphicsDevice);
         var backgroundTex = Content.Load<Texture2D>("main_background");
         var bgLayer0      = Content.Load<Texture2D>("background/background_layer0");
@@ -142,16 +152,21 @@ public class Game1 : Game
         // Background Music
         try
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string devPath = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\AleaJactaEstMusique.wav"));
-            string devPathContent = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\Content\music\AleaJactaEstMusique.wav"));
-            string contentPath = Path.Combine("Content", "music", "AleaJactaEstMusique.wav");
+            string baseDir = AppContext.BaseDirectory;
+            string[] musicPaths = {
+                Path.Combine(baseDir, "Content", "music", "AleaJactaEstMusique.wav"),
+                Path.Combine(baseDir, "AleaJactaEstMusique.wav"),
+                Path.Combine("Content", "music", "AleaJactaEstMusique.wav"),
+                "AleaJactaEstMusique.wav",
+                Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\Content\music\AleaJactaEstMusique.wav")),
+                Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\AleaJactaEstMusique.wav")),
+            };
 
             string musicPath = null;
-            if (File.Exists("AleaJactaEstMusique.wav")) musicPath = "AleaJactaEstMusique.wav";
-            else if (File.Exists(contentPath)) musicPath = contentPath;
-            else if (File.Exists(devPathContent)) musicPath = devPathContent;
-            else if (File.Exists(devPath)) musicPath = devPath;
+            foreach (var mp in musicPaths)
+            {
+                if (File.Exists(mp)) { musicPath = mp; break; }
+            }
 
             if (musicPath != null)
             {
@@ -167,6 +182,16 @@ public class Game1 : Game
     }
 
     protected override void Update(GameTime gameTime)
+    {
+        try { UpdateInner(gameTime); }
+        catch (Exception ex)
+        {
+            File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "crash.txt"), ex.ToString());
+            throw;
+        }
+    }
+
+    private void UpdateInner(GameTime gameTime)
     {
         _inputService.Update();
 
@@ -292,6 +317,16 @@ public class Game1 : Game
     }
 
     protected override void Draw(GameTime gameTime)
+    {
+        try { DrawInner(gameTime); }
+        catch (Exception ex)
+        {
+            File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "crash.txt"), ex.ToString());
+            throw;
+        }
+    }
+
+    private void DrawInner(GameTime gameTime)
     {
         _gameRenderer.Render(_state, gameTime);
 

@@ -224,6 +224,27 @@ public class CardFactory
                 };
                 return denierPrefix != null ? $"cards/coin/{denierPrefix}Denier" : null;
 
+            case CardSuit.Coupe:
+                string? coupePrefix = rank switch
+                {
+                    CardRank.Un       => "1",
+                    CardRank.Deux     => "2",
+                    CardRank.Trois    => "3",
+                    CardRank.Quatre   => "4",
+                    CardRank.Cinq     => "5",
+                    CardRank.Six      => "6",
+                    CardRank.Sept     => "7",
+                    CardRank.Huit     => "8",
+                    CardRank.Neuf     => "9",
+                    CardRank.Dix      => "10",
+                    CardRank.Valet    => "valet",
+                    CardRank.Cavalier => "chevalier",
+                    CardRank.Reine    => "reine",
+                    CardRank.Roi      => "roi",
+                    _                 => null
+                };
+                return coupePrefix != null ? $"cards/cup/{coupePrefix}Coupe" : null;
+
             default:
                 return null;
         }
