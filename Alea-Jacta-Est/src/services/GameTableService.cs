@@ -590,7 +590,7 @@ public class GameTableService
         // No nested children — use cursor positioning within ##local
         var layoutOrigin = ImGui.GetCursorScreenPos();
         float remainH = Math.Max(1f, h - (layoutOrigin.Y - ImGui.GetWindowPos().Y) - 4f);
-        const float arcColW = 110f;
+        const float arcColW = 140f;
         float centerX = layoutOrigin.X + arcColW + 6f;
         float centerW = Math.Max(1f, w - 12f - arcColW - 6f);
 
@@ -717,30 +717,21 @@ public class GameTableService
         }
 
         bool canActivate = isPlayPhase && !arcanaLimit;
-        var dl = ImGui.GetWindowDrawList();
-
-        float headerH = ImGui.GetCursorPosY();
-        float availH = colH - headerH;
         int n = arcanaHand.Cards.Count;
-        const float spacing = 4f;
+        const int cols = 4;
+        const float spacing = 3f;
 
-        // Grid: compute how many columns fit
-        float maxCardW = 48f;
-        float maxCardH = maxCardW * (93f / 56f);
-        int cols = Math.Max(1, (int)((colW + spacing) / (maxCardW + spacing)));
-        int rows = (n + cols - 1) / cols;
-
-        // Shrink cards if they don't fit vertically
-        float cardW = maxCardW;
-        float cardH = maxCardH;
-        float totalH = rows * (cardH + spacing);
-        if (totalH > availH && rows > 0)
-        {
-            cardH = Math.Max(24f, (availH - rows * spacing) / rows);
-            cardW = cardH * (56f / 93f);
-        }
-
+        // Card size: fit 4 columns in available width
+        float cardW = Math.Max(16f, (colW - spacing * (cols + 1)) / cols);
+        float cardH = cardW * (93f / 56f);
         var cardSize = new Vector2(cardW, cardH);
+
+        // Scrollable child for the grid
+        float scrollH = colH - ImGui.GetCursorPosY();
+        ImGui.BeginChild("##arcgrid", new Vector2(colW, scrollH), ImGuiChildFlags.None,
+            ImGuiWindowFlags.NoScrollbar);
+
+        var dl = ImGui.GetWindowDrawList();
 
         for (int i = 0; i < arcanaHand.Cards.Count; i++)
         {
@@ -750,7 +741,7 @@ public class GameTableService
             int col = i % cols;
             int row = i / cols;
             float x = spacing + col * (cardW + spacing);
-            float y = headerH + row * (cardH + spacing);
+            float y = row * (cardH + spacing);
 
             ImGui.SetCursorPos(new Vector2(x, y));
             ImGui.PushID(i);
@@ -785,6 +776,8 @@ public class GameTableService
             dl.AddRectFilled(wp, wp + ws,
                 ImGui.ColorConvertFloat4ToU32(new Vector4(0.8f, 0.1f, 0.1f, 0.12f)));
         }
+
+        ImGui.EndChild();
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -808,7 +801,7 @@ public class GameTableService
         var mousePos = ImGui.GetIO().MousePos;
         var cardSize = new Vector2(cellW, cellH);
 
-        void DrawPileRow(DeckType deckKey, string label, float y, bool showFront)
+        void DrawPileRow(DeckType deckKey, string label, float y, bool showFront, bool hoverable)
         {
             float cx = origin.X + zoneW * 0.5f;
             float cy = y + cellH * 0.5f;
@@ -846,15 +839,15 @@ public class GameTableService
             dl.AddText(new Vector2(cx - lw2 * 0.5f, cy + cellH * 0.5f + 2f),
                 ImGui.ColorConvertFloat4ToU32(new Vector4(0.7f, 0.7f, 0.7f, 1f)), label);
 
-            if (IsMouseInRotatedRect(mousePos, center, cellW, cellH, 0f))
+            if (hoverable && IsMouseInRotatedRect(mousePos, center, cellW, cellH, 0f))
                 CardTooltip(r, topCard);
         }
 
         float y0 = origin.Y;
         float step = cellH + labelH + 2f + rowGap;
-        DrawPileRow(DeckType.MainDeck,     "Pioche",             y0,            false);
-        DrawPileRow(DeckType.SpecialDeck,  "Arc. Pioche",        y0 + step,     false);
-        DrawPileRow(DeckType.DiscardDeck,  "D\u00e9fausse",      y0 + step * 2, true);
+        DrawPileRow(DeckType.MainDeck,     "Pioche",             y0,            false, false);
+        DrawPileRow(DeckType.SpecialDeck,  "Arc. Pioche",        y0 + step,     false, false);
+        DrawPileRow(DeckType.DiscardDeck,  "D\u00e9fausse",      y0 + step * 2, true,  true);
     }
 
     // ────────────────────────────────────────────────────────────────

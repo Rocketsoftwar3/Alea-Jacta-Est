@@ -29,9 +29,9 @@ public class MultiplayerDeckService
         {
             player.Wallet = 100;
 
-            // Main deck: 20 random value cards
-            for (int i = 0; i < 20; i++)
-                player.Decks[DeckType.MainDeck].AddCard(CreateRandomValue(rng));
+            // Main deck: 20 unique value cards (no duplicates)
+            foreach (var card in _factory.CreateUniqueValueCards(20, rng))
+                player.Decks[DeckType.MainDeck].AddCard(card);
 
             // Special deck: 5 arcana cards
             for (int i = 0; i < 5; i++)

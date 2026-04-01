@@ -269,4 +269,25 @@ public class CardFactory
         var rank = ranks[_random.Next(ranks.Length)];
         return CreateValueCard(suit, rank);
     }
+
+    /// <summary>Creates a full set of 56 unique value cards (4 suits × 14 ranks), shuffles with the given RNG, and returns the first <paramref name="count"/>.</summary>
+    public List<ValueCard> CreateUniqueValueCards(int count, Random rng)
+    {
+        var suits = (CardSuit[])Enum.GetValues(typeof(CardSuit));
+        var ranks = (CardRank[])Enum.GetValues(typeof(CardRank));
+
+        var all = new List<ValueCard>();
+        foreach (var suit in suits)
+            foreach (var rank in ranks)
+                all.Add(CreateValueCard(suit, rank));
+
+        // Shuffle
+        for (int i = all.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (all[i], all[j]) = (all[j], all[i]);
+        }
+
+        return all.GetRange(0, Math.Min(count, all.Count));
+    }
 }
