@@ -36,8 +36,12 @@ public class IntroDialogueService
     {
         try
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string baseDir = AppContext.BaseDirectory;
             string[] possiblePaths = {
+                Path.Combine(baseDir, "Content", "dialogue_avatar.png"),
+                Path.Combine(baseDir, "dialogue_avatar.png"),
+                Path.Combine(baseDir, "Content", "dialog_avatar.png"),
+                Path.Combine(baseDir, "dialog_avatar.png"),
                 "dialogue_avatar.png",
                 Path.Combine("Content", "dialogue_avatar.png"),
                 Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\Content\dialogue_avatar.png")),

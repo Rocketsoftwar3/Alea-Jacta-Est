@@ -44,5 +44,7 @@
       <Content Include="Content\defaultname.txt">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <None Include="dialogue_avatar.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <None Include="Content\music\AleaJactaEstMusique.wav" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="Content\music\AleaJactaEstMusique.wav" />
     </ItemGroup>
 </Project>
