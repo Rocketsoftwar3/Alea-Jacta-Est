@@ -8,11 +8,11 @@ namespace Alea_Jacta_Est.Services;
 
 public class IntroDialogueService
 {
-    private readonly string[] _dialogues = 
+    private readonly string[] _dialogues =
     {
-        "« Te voilà enfin éveillé… jeune damné. J’attendais ce moment. »",
-        "« Je perçois ton désir de fuir ce royaume. Parfait… j’ai justement un divertissement à te proposer. »",
-        "« Écoute bien, car ta destinée se joue ici et maintenant. Parmi toi et tes trois compagnons, un seul franchira ces portes… les autres tomberont dans l’oubli éternel. Trahis, combats, survis… peu m’importe. Montre-moi jusqu’où tu es prêt à sombrer pour retrouver ta vie. »"
+        "\u00AB Te voil\u00E0 enfin \u00E9veill\u00E9\u2026 jeune damn\u00E9. J\u2019attendais ce moment. \u00BB",
+        "\u00AB Je per\u00E7ois ton d\u00E9sir de fuir ce royaume. Parfait\u2026 j\u2019ai justement un divertissement \u00E0 te proposer. \u00BB",
+        "\u00AB \u00C9coute bien, car ta destin\u00E9e se joue ici et maintenant. Parmi toi et tes trois compagnons, un seul franchira ces portes\u2026 les autres tomberont dans l\u2019oubli \u00E9ternel. Trahis, combats, survis\u2026 peu m\u2019importe. Montre-moi jusqu\u2019o\u00F9 tu es pr\u00EAt \u00E0 sombrer pour retrouver ta vie. \u00BB"
     };
 
     private int _currentLine = 0;

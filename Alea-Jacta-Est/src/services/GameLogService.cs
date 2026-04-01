@@ -44,17 +44,17 @@ public class GameLogService
         foreach (var (player, dmg) in e.Damages)
         {
             if (dmg > 0)
-                Add($"{player.Name} recoit {dmg} degats", new Vector4(1f, 0.4f, 0.3f, 1f));
+                Add($"{player.Name} re\u00e7oit {dmg} d\u00e9g\u00e2ts", new Vector4(1f, 0.4f, 0.3f, 1f));
         }
     }
 
     public void OnPlayerEliminated(PlayerEliminated e)
-        => Add($"{e.Player.Name} est elimine!", new Vector4(1f, 0.2f, 0.2f, 1f));
+        => Add($"{e.Player.Name} est \u00e9limin\u00e9!", new Vector4(1f, 0.2f, 0.2f, 1f));
 
     public void OnEffectApplied(EffectApplied e)
     {
         string cardName = e.Source is ArcanaCard ac ? ac.ArcanaName : e.Source.TextureRecto.Name;
-        Add($"Effet: {cardName} active par {e.Owner.Name}", new Vector4(0.85f, 0.55f, 1f, 1f));
+        Add($"Effet: {cardName} activ\u00e9 par {e.Owner.Name}", new Vector4(0.85f, 0.55f, 1f, 1f));
     }
 
     public void OnCardPurchased(CardPurchased e)
@@ -62,6 +62,6 @@ public class GameLogService
         string cardName = e.Card is ValueCard vc ? vc.DisplayName
                         : e.Card is ArcanaCard ac ? ac.ArcanaName
                         : e.Card.TextureRecto.Name;
-        Add($"{e.Buyer.Name} achete {cardName} ({e.Price}g)", new Vector4(1f, 0.85f, 0.3f, 1f));
+        Add($"{e.Buyer.Name} ach\u00e8te {cardName} ({e.Price}g)", new Vector4(1f, 0.85f, 0.3f, 1f));
     }
 }

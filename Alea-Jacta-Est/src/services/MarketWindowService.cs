@@ -258,7 +258,7 @@ public class MarketWindowService
             if (vc.IsFaceCard)
                 ImGui.TextDisabled($"Multiplicateur: x{vc.Multiplier}");
             else
-                ImGui.TextDisabled($"Valeur: {vc.DamageValue} degats");
+                ImGui.TextDisabled($"Valeur: {vc.DamageValue} d\u00e9g\u00e2ts");
             ImGui.TextDisabled($"Enseigne: {vc.Suit}");
         }
         else if (card is ArcanaCard ac)

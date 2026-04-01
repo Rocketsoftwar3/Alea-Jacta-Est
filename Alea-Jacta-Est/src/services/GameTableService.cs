@@ -75,10 +75,9 @@ public class GameTableService
         const float pad     = 6f;
         const float bannerH = 30f;
         float remaining     = H - bannerH - pad * 3f;
-        float thirdH        = remaining / 3f;
-        float oppH           = thirdH;
-        float boardH         = thirdH;
-        float localH         = thirdH;
+        float oppH           = remaining * 0.25f;
+        float boardH         = remaining * 0.30f;
+        float localH         = remaining * 0.45f;
 
         var player    = state.LocalPlayer;
         var opponents = state.Players.Where(p => !p.IsLocalPlayer).ToList();
@@ -100,56 +99,37 @@ public class GameTableService
         RenderLocal(state, player, r, W - pad * 2f, localH, ref marketOpen);
 
         ImGui.End();
-
-        // ── 5. Game log panel (bottom-left overlay) ──────────────────
-        RenderGameLog(W, H);
     }
 
     // ────────────────────────────────────────────────────────────────
-    // Game log panel — fixed corner overlay (not a floating window)
+    // Game log panel — rendered inline inside the board zone (right)
     // ────────────────────────────────────────────────────────────────
 
-    private void RenderGameLog(float W, float H)
+    private void RenderGameLogInline(float logW, float logH)
     {
-        const float logW = 260f;
-        const float logH = 140f;
-        const float margin = 6f;
-
-        // Fixed position, no title bar, no move, no resize
-        ImGui.SetNextWindowPos(new Vector2(margin, H - logH - margin), ImGuiCond.Always);
-        ImGui.SetNextWindowSize(new Vector2(logW, logH), ImGuiCond.Always);
-        ImGui.SetNextWindowBgAlpha(0.6f);
-
-        var flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove
-                  | ImGuiWindowFlags.NoResize   | ImGuiWindowFlags.NoFocusOnAppearing
-                  | ImGuiWindowFlags.NoNav      | ImGuiWindowFlags.NoBringToFrontOnFocus;
-
-        ImGui.Begin("##gamelog", flags);
+        ImGui.BeginChild("##gamelog", new Vector2(logW, logH), ImGuiChildFlags.Borders);
 
         ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 0.8f), "Actu");
         ImGui.Separator();
 
-        // Scrollable log entries
         float contentH = ImGui.GetContentRegionAvail().Y;
         ImGui.BeginChild("##logscroll", new Vector2(0, contentH), ImGuiChildFlags.None);
 
         var entries = _gameLog.Entries;
-        // Show only last entries that fit
-        int startIdx = Math.Max(0, entries.Count - 20);
+        int startIdx = Math.Max(0, entries.Count - 30);
         for (int i = startIdx; i < entries.Count; i++)
         {
             var e = entries[i];
-            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + logW - 16f);
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + logW - 20f);
             ImGui.TextColored(e.Color, e.Message);
             ImGui.PopTextWrapPos();
         }
 
-        // Auto-scroll
         if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY() - 10f)
             ImGui.SetScrollHereY(1.0f);
 
         ImGui.EndChild();
-        ImGui.End();
+        ImGui.EndChild();
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -458,12 +438,18 @@ public class GameTableService
         bool isPlayPhase = state.CurrentTurnPhase == TurnPhase.PlayPhase;
         var  board       = player.Decks[DeckType.BoardDeck0];
 
-        ImGui.BeginChild("##board", new Vector2(w, h), ImGuiChildFlags.Borders);
+        const float logW = 220f;
+        float boardW = w - logW - 6f;
+
+        ImGui.BeginChild("##board", new Vector2(boardW, h), ImGuiChildFlags.Borders);
 
         if (board.Cards.Count == 0)
         {
             ImGui.TextDisabled("Plateau - posez vos cartes en phase Jeu");
             ImGui.EndChild();
+            // Still render log on the right
+            ImGui.SameLine(0, 6f);
+            RenderGameLogInline(logW, h);
             return;
         }
 
@@ -477,10 +463,10 @@ public class GameTableService
                 int idx   = state.Players.IndexOf(player);
                 float bst = state.TurnStates.TryGetValue(idx, out var ts2) && ts2.MultiplierDoubled ? 2f : 1f;
                 dmg   = _damageCalc.CalculateDamage(board.Cards, bst);
-                dmgLabel = $"  >> {dmg} degats potentiels";
+                dmgLabel = $"  >> {dmg} d\u00e9g\u00e2ts potentiels";
             }
             float totalLabelW = ImGui.CalcTextSize(plateauLabel).X + (dmgLabel.Length > 0 ? ImGui.CalcTextSize(dmgLabel).X : 0);
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (w - 12f - totalLabelW) * 0.5f);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (boardW - 12f - totalLabelW) * 0.5f);
             ImGui.TextDisabled(plateauLabel);
             if (dmgLabel.Length > 0)
             {
@@ -496,14 +482,14 @@ public class GameTableService
         var dl = ImGui.GetWindowDrawList();
         var origin = ImGui.GetCursorScreenPos();
 
-        ImGui.Dummy(new Vector2(w - 12f, CardBoard.Y + 4f));
+        ImGui.Dummy(new Vector2(boardW - 12f, CardBoard.Y + 4f));
 
         int pidx = state.Players.IndexOf(player);
         bool multDoubled = state.TurnStates.TryGetValue(pidx, out var mts2) && mts2.MultiplierDoubled;
 
         var toTake = new List<ValueCard>();
         float totalCardsW = board.Cards.Count * CardBoard.X + Math.Max(0, board.Cards.Count - 1) * 6f;
-        float startX = origin.X + (w - 12f - totalCardsW) * 0.5f;
+        float startX = origin.X + (boardW - 12f - totalCardsW) * 0.5f;
         for (int i = 0; i < board.Cards.Count; i++)
         {
             var card = board.Cards[i];
@@ -546,6 +532,10 @@ public class GameTableService
         foreach (var vc in toTake) _commands.Enqueue(new TakeBackCardCommand(player, vc));
 
         ImGui.EndChild();
+
+        // ── Log panel on the right of the board ──────────────────────
+        ImGui.SameLine(0, 6f);
+        RenderGameLogInline(logW, h);
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -561,22 +551,19 @@ public class GameTableService
         bool alreadyVal  = state.TurnStates.TryGetValue(localIdx, out var ts) && ts.HasValidated;
         bool arcanaLimit = ts != null && ts.ArcanasPlayedThisTurn >= ts.MaxArcanasPerTurn;
 
-        float fanH = Math.Min(220f, h * 0.55f);
+        ImGui.BeginChild("##local", new Vector2(w, h), ImGuiChildFlags.Borders,
+            ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
 
-        ImGui.BeginChild("##local", new Vector2(w, h), ImGuiChildFlags.Borders);
-
-        // ── Stats (name + HP bar, no gold — gold is in banner) ───────
-        // "Waiting" overlay when it's not the local player's turn
+        // ── Waiting overlay ─────────────────────────────────────────
         if (!state.IsSinglePlayer && state.CurrentTurnPhase == TurnPhase.PlayPhase && !isMyTurn)
         {
             var cur = state.CurrentPlayer;
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.55f, 0.55f, 0.55f, 1f));
-            ImGui.TextUnformatted($"En attente — tour de {cur?.Name ?? "?"}");
+            ImGui.TextUnformatted($"En attente \u2014 tour de {cur?.Name ?? "?"}");
             ImGui.PopStyleColor();
-            ImGui.Separator();
         }
 
-        // ── Stats line: Name | HP bar | effects | deck counts ───────
+        // ── Stats line: Name | HP bar | hoverable active effects ────
         ImGui.TextColored(new Vector4(0.4f, 0.9f, 1f, 1f), player.Name);
         ImGui.SameLine(0, 12);
         float f = Math.Clamp(player.Health / 100f, 0f, 1f);
@@ -584,34 +571,51 @@ public class GameTableService
         ImGui.ProgressBar(f, new Vector2(200, 16), $"HP {player.Health}/100");
         ImGui.PopStyleColor();
 
-        var effects = _effectManager.GetActiveEffectSummary();
-        if (effects.Count > 0)
+        // Hoverable active effects (card images with tooltip)
+        var playerEffects = _effectManager.GetActiveEffectsForPlayer(player);
+        if (playerEffects.Count > 0)
         {
             ImGui.SameLine(0, 12);
             ImGui.TextColored(new Vector4(0.85f, 0.55f, 1f, 1f), "Effets:");
-            foreach (var (en, turns) in effects)
-            { ImGui.SameLine(0, 4); ImGui.TextDisabled($"[{en} {turns}t]"); }
+            foreach (var (effCard, turns) in playerEffects)
+            {
+                ImGui.SameLine(0, 4);
+                ImGui.Image(r.GetOrBindTexture(effCard.TextureRecto), new Vector2(20, 33));
+                if (ImGui.IsItemHovered())
+                    CardTooltip(r, effCard);
+            }
         }
 
-        // ── Hand fan + deck piles side by side ───────────────────────
-        const float pilesW = 260f;
-        float fanW = w - 12f - pilesW - 6f;
+        // ── Layout: [Arcana left] | [Fan + Piles + Buttons right] ───
+        // No nested children — use cursor positioning within ##local
+        var layoutOrigin = ImGui.GetCursorScreenPos();
+        float remainH = Math.Max(1f, h - (layoutOrigin.Y - ImGui.GetWindowPos().Y) - 4f);
+        const float arcColW = 80f;
+        float centerX = layoutOrigin.X + arcColW + 6f;
+        float centerW = Math.Max(1f, w - 12f - arcColW - 6f);
 
-        Vector2 rowOriginFan = ImGui.GetCursorScreenPos();
+        // Left column: Arcana cards (single nested child — safe)
+        ImGui.BeginChild("##arc_col", new Vector2(arcColW, remainH), ImGuiChildFlags.None,
+            ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        RenderArcanaColumn(player, r, isPlayPhase, arcanaLimit, arcColW, remainH);
+        ImGui.EndChild();
+
+        // ── Right area: Fan + Piles + Buttons (rendered via draw list) ──
+        float fanH = Math.Min(180f, remainH * 0.65f);
+        float pilesW = Math.Min(160f, centerW * 0.22f);
+        float fanW = centerW - pilesW - 6f;
+
+        // Fan
+        ImGui.SetCursorScreenPos(new Vector2(centerX, layoutOrigin.Y));
         RenderHandFan(state, player, r, fanW, isPlayPhase, localIdx, fanH);
 
-        // Deck piles on the right, same vertical origin
-        ImGui.SetCursorScreenPos(new Vector2(rowOriginFan.X + fanW + 6f, rowOriginFan.Y));
+        // Deck piles to the right of the fan
+        ImGui.SetCursorScreenPos(new Vector2(centerX + fanW + 6f, layoutOrigin.Y));
         RenderDeckPiles(player, r, pilesW);
 
-        // Advance cursor past whichever is taller
-        float pileRowH = CardPile.Y + 14f + 4f;
-        float rowH = Math.Max(fanH, pileRowH);
-        ImGui.SetCursorScreenPos(new Vector2(rowOriginFan.X, rowOriginFan.Y + rowH + 2f));
-
-        // ── Arcana strip (horizontal, below fan) ─────────────────────
-        RenderArcanaStrip(player, r, isPlayPhase, arcanaLimit, w - 12f);
-
+        // Advance cursor below the fan/piles row
+        float rowH = fanH;
+        ImGui.SetCursorScreenPos(new Vector2(centerX, layoutOrigin.Y + rowH + 2f));
 
         // ── Action buttons ───────────────────────────────────────────
         bool targeting = state.PendingActivation != null;
@@ -621,19 +625,16 @@ public class GameTableService
 
         const float btnH = 30f;
         const float gap = 4f;
-        float availW = ImGui.GetContentRegionAvail().X;
         var rowOrigin = ImGui.GetCursorPos();
 
         if (isPlayPhase && !alreadyVal && !hasPlayed)
         {
-            // Play/Discard buttons when cards are selected
             float btnW = 140f;
             float totalBtnsW = btnW * 2 + gap;
-            float startX = rowOrigin.X + (availW - totalBtnsW) * 0.5f;
+            float startX = rowOrigin.X + (centerW - totalBtnsW) * 0.5f;
 
-            // Discard button (left)
             ImGui.SetCursorPos(new Vector2(startX, rowOrigin.Y));
-            string discardLabel = $"Defausser ({ts!.DiscardsRemaining})";
+            string discardLabel = $"D\u00e9fausser ({ts!.DiscardsRemaining})";
             bool discardDisabled = !hasSelected || !canDiscard;
             if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_discard", discardLabel, new Vector2(btnW, btnH),
                 new Vector4(0.6f, 0.3f, 0.1f, 1f), discardDisabled))
@@ -641,7 +642,6 @@ public class GameTableService
                 _commands.Enqueue(new DiscardCardsCommand(player, new List<Entities.Card>(ts.SelectedCards)));
             }
 
-            // Play button (right)
             ImGui.SetCursorPos(new Vector2(startX + btnW + gap, rowOrigin.Y));
             if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_play", ">> Jouer <<", new Vector2(btnW, btnH),
                 new Vector4(0.85f, 0.65f, 0.1f, 1f), !hasSelected))
@@ -650,7 +650,6 @@ public class GameTableService
                 _commands.Enqueue(new ValidateTurnCommand(localIdx));
             }
 
-            // Pulsing border on play button when cards are selected
             if (hasSelected)
             {
                 float time = (float)ImGui.GetTime();
@@ -663,20 +662,20 @@ public class GameTableService
         }
         else if (isShopPhase)
         {
-            // Shop phase handled by modal — no button needed here
+            // Shop phase handled by modal
         }
         else if (hasPlayed || alreadyVal)
         {
-            float lblW = ImGui.CalcTextSize("Tour valide - en attente...").X;
-            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (availW - lblW) * 0.5f);
-            ImGui.TextColored(new Vector4(0.5f, 0.8f, 0.5f, 1f), "Tour valide - en attente...");
+            float lblW = ImGui.CalcTextSize("Tour valid\u00e9 - en attente...").X;
+            ImGui.SetCursorPosX(rowOrigin.X + (centerW - lblW) * 0.5f);
+            ImGui.TextColored(new Vector4(0.5f, 0.8f, 0.5f, 1f), "Tour valid\u00e9 - en attente...");
         }
 
         if (targeting)
         {
             var pending = state.PendingActivation!;
             float targetBtnW = 120f;
-            float rightX = rowOrigin.X + availW - targetBtnW;
+            float rightX = rowOrigin.X + centerW - targetBtnW;
 
             ImGui.SetCursorPos(new Vector2(rightX, rowOrigin.Y));
             if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_self", "Se cibler soi", new Vector2(targetBtnW, btnH), new Vector4(0.6f, 0.5f, 0.1f, 1f), false))
@@ -686,98 +685,81 @@ public class GameTableService
             if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_cancel", "Annuler", new Vector2(targetBtnW, btnH), new Vector4(0.5f, 0.15f, 0.15f, 1f), false))
                 state.PendingActivation = null;
 
-            // Banner reminder
             var dlLocal = ImGui.GetWindowDrawList();
             var bannerPos = ImGui.GetWindowPos() + new Vector2(0, 2);
-            string bannerTxt = $"CIBLE REQUISE : {pending.Card.ArcanaName} ({(pending.Card.IsUpright ? "Endroit" : "Envers")}) — Cliquer sur un adversaire";
+            string bannerTxt = $"CIBLE REQUISE : {pending.Card.ArcanaName} ({(pending.Card.IsUpright ? "Endroit" : "Envers")}) \u2014 Cliquer sur un adversaire";
             var bannerSize = ImGui.CalcTextSize(bannerTxt);
             float bannerX = bannerPos.X + (ImGui.GetWindowSize().X - bannerSize.X) / 2f;
-            float time = (float)ImGui.GetTime();
-            float pulse = 0.7f + 0.3f * MathF.Sin(time * 3f);
-            uint bannerCol = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.9f, 0.2f, pulse));
+            float time2 = (float)ImGui.GetTime();
+            float pulse2 = 0.7f + 0.3f * MathF.Sin(time2 * 3f);
+            uint bannerCol = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.9f, 0.2f, pulse2));
             dlLocal.AddText(new Vector2(bannerX, bannerPos.Y), bannerCol, bannerTxt);
         }
 
-        ImGui.EndChild();
+        ImGui.EndChild(); // ##local
     }
 
     // ────────────────────────────────────────────────────────────────
-    // Arcana strip — horizontal row of arcana cards below the hand fan
+    // Arcana column — vertical stack of arcana cards (left of fan)
     // ────────────────────────────────────────────────────────────────
 
-    private static readonly Vector2 CardArc  = new(56f, 93f);
-    private const float ArcStripGap = 8f;
-
-    private void RenderArcanaStrip(Player player, ImGuiRenderer r, bool isPlayPhase, bool arcanaLimit, float stripW)
+    private void RenderArcanaColumn(Player player, ImGuiRenderer r, bool isPlayPhase, bool arcanaLimit, float colW, float colH)
     {
         if (!player.Decks.TryGetValue(DeckType.ArcanaHandDeck, out var arcanaHand))
             return;
 
+        ImGui.TextColored(new Vector4(0.85f, 0.55f, 1f, 1f), "Arc.");
+
         if (arcanaHand.Cards.Count == 0)
         {
-            ImGui.TextColored(new Vector4(0.45f, 0.45f, 0.45f, 0.7f), "Arcanes: aucune");
+            ImGui.TextDisabled("--");
             return;
         }
 
         bool canActivate = isPlayPhase && !arcanaLimit;
-        float stripH = CardArc.Y + 18f; // card + name label
-
-        // Header
-        string header = $"Arcanes ({arcanaHand.Cards.Count})";
-        float hw = ImGui.CalcTextSize(header).X;
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (stripW - hw) * 0.5f);
-        ImGui.TextColored(new Vector4(0.85f, 0.55f, 1f, 1f), header);
-
-        // Horizontal scrollable child
-        ImGui.BeginChild("##arcstrip", new Vector2(stripW, stripH), ImGuiChildFlags.Borders, ImGuiWindowFlags.HorizontalScrollbar);
         var dl = ImGui.GetWindowDrawList();
 
-        // Adaptive card size: shrink if too many cards to fit
+        // Adaptive card size to fit vertically
+        float cardW = Math.Min(colW - 4f, 52f);
+        float cardH = cardW * (93f / 56f); // maintain aspect ratio
+        const float spacing = 4f;
         int n = arcanaHand.Cards.Count;
-        float totalNeeded = n * CardArc.X + (n - 1) * ArcStripGap;
-        float scale = totalNeeded > stripW ? Math.Max(0.7f, stripW / totalNeeded) : 1f;
-        var cardSize = CardArc * scale;
 
-        // Center the strip if cards fit
-        float actualTotal = n * cardSize.X + (n - 1) * ArcStripGap * scale;
-        float offsetX = actualTotal < stripW ? (stripW - actualTotal) * 0.5f : 0f;
+        float headerH = ImGui.GetCursorPosY();
+        float availH = colH - headerH;
+        float totalH = n * (cardH + spacing);
+        if (totalH > availH && n > 0)
+        {
+            cardH = Math.Max(28f, (availH - n * spacing) / n);
+            cardW = cardH * (56f / 93f);
+        }
 
         for (int i = 0; i < arcanaHand.Cards.Count; i++)
         {
             var card = arcanaHand.Cards[i];
             if (card is not ArcanaCard ac) continue;
 
-            float x = offsetX + i * (cardSize.X + ArcStripGap * scale);
-
-            ImGui.SetCursorPos(new Vector2(x, 0));
+            float x = (colW - cardW) * 0.5f;
+            ImGui.SetCursorPosX(x);
             ImGui.PushID(i);
-            bool pressed = ImGui.InvisibleButton("as", cardSize);
+            bool pressed = ImGui.InvisibleButton("ac", new Vector2(cardW, cardH));
             ImGui.PopID();
 
-            Vector2 tl     = ImGui.GetItemRectMin();
-            Vector2 center = tl + cardSize * 0.5f;
+            Vector2 tl = ImGui.GetItemRectMin();
+            Vector2 center = tl + new Vector2(cardW, cardH) * 0.5f;
             var texId = r.GetOrBindTexture(card.TextureRecto);
-            DrawFanCard(dl, texId, center, 0f, cardSize);
+            DrawFanCard(dl, texId, center, 0f, new Vector2(cardW, cardH));
 
             bool hovered = ImGui.IsItemHovered();
             if (hovered)
             {
-                // Glow border
                 float time = (float)ImGui.GetTime();
                 float glow = 0.7f + 0.3f * MathF.Sin(time * 4f);
-                dl.AddRect(tl - new Vector2(2, 2), tl + cardSize + new Vector2(2, 2),
+                dl.AddRect(tl - new Vector2(1, 1), tl + new Vector2(cardW + 1, cardH + 1),
                     ImGui.ColorConvertFloat4ToU32(new Vector4(0.85f, 0.55f, 1f, canActivate ? glow : 0.35f)),
-                    4f, ImDrawFlags.None, 2.5f);
+                    3f, ImDrawFlags.None, 2f);
                 CardTooltip(r, card);
             }
-
-            // Card name below
-            string shortName = ac.ArcanaName;
-            var nameSize = ImGui.CalcTextSize(shortName);
-            float nameX = tl.X + (cardSize.X - nameSize.X) * 0.5f;
-            float nameY = tl.Y + cardSize.Y + 1f;
-            dl.AddText(new Vector2(nameX, nameY),
-                ImGui.ColorConvertFloat4ToU32(new Vector4(0.75f, 0.6f, 0.9f, 1f)), shortName);
 
             if (pressed && canActivate)
                 _commands.Enqueue(new ActivateArcanaCommand(player, ac, null, _effectManager));
@@ -791,8 +773,6 @@ public class GameTableService
             dl.AddRectFilled(wp, wp + ws,
                 ImGui.ColorConvertFloat4ToU32(new Vector4(0.8f, 0.1f, 0.1f, 0.12f)));
         }
-
-        ImGui.EndChild();
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -801,30 +781,34 @@ public class GameTableService
 
     private void RenderDeckPiles(Player player, ImGuiRenderer r, float zoneW)
     {
-        const float pileSpacing = 80f;
-        const float labelH      = 14f;
-        float pileRowH          = CardPile.Y + labelH + 4f;
+        const float labelH  = 14f;
+        const float rowGap  = 4f;
 
-        Vector2 origin  = ImGui.GetCursorScreenPos();
-        ImGui.Dummy(new Vector2(zoneW, pileRowH));
+        // Vertical grid: 3 rows, each with a small card + label to the right
+        float cellH = CardPile.Y * 0.6f; // smaller cards to fit vertically
+        float cellW = CardPile.X * 0.6f;
+        float totalH = 3 * cellH + 2 * rowGap + 3 * (labelH + 2f);
+
+        Vector2 origin = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(new Vector2(zoneW, totalH));
 
         var dl       = ImGui.GetWindowDrawList();
         var mousePos = ImGui.GetIO().MousePos;
+        var cardSize = new Vector2(cellW, cellH);
 
-        float centerX = origin.X + zoneW * 0.5f;
-        float cardY   = origin.Y + CardPile.Y * 0.5f;
-
-        // Helper: draw one pile and its label
-        void DrawPile(DeckType deckKey, string label, float x, bool showFront)
+        void DrawPileRow(DeckType deckKey, string label, float y, bool showFront)
         {
+            float cx = origin.X + zoneW * 0.5f;
+            float cy = y + cellH * 0.5f;
+            var center = new Vector2(cx, cy);
+
             if (!player.Decks.TryGetValue(deckKey, out var deck) || deck.Cards.Count == 0)
             {
-                // Empty pile — draw border only
-                var tl = new Vector2(x - CardPile.X * 0.5f, cardY - CardPile.Y * 0.5f);
-                var br = new Vector2(x + CardPile.X * 0.5f, cardY + CardPile.Y * 0.5f);
+                var tl = center - cardSize * 0.5f;
+                var br = center + cardSize * 0.5f;
                 dl.AddRect(tl, br, ImGui.ColorConvertFloat4ToU32(new Vector4(0.4f, 0.4f, 0.4f, 0.5f)));
                 float lw = ImGui.CalcTextSize(label).X;
-                dl.AddText(new Vector2(x - lw * 0.5f, cardY + CardPile.Y * 0.5f + 2f),
+                dl.AddText(new Vector2(cx - lw * 0.5f, cy + cellH * 0.5f + 2f),
                     ImGui.ColorConvertFloat4ToU32(new Vector4(0.5f, 0.5f, 0.5f, 1f)), label);
                 return;
             }
@@ -832,33 +816,33 @@ public class GameTableService
             var topCard = deck.Cards[^1];
             var tex     = showFront ? r.GetOrBindTexture(topCard.TextureRecto)
                                     : r.GetOrBindTexture(topCard.TextureVerso);
-            var center  = new Vector2(x, cardY);
-            DrawFanCard(dl, tex, center, 0f, CardPile);
+            DrawFanCard(dl, tex, center, 0f, cardSize);
 
-            // Count badge (bottom-right corner)
+            // Count badge
             if (deck.Cards.Count > 1)
             {
                 string cnt = $"{deck.Cards.Count}";
-                var br     = new Vector2(x + CardPile.X * 0.5f, cardY + CardPile.Y * 0.5f);
-                dl.AddRectFilled(br - new Vector2(18, 14), br,
+                var br     = center + cardSize * 0.5f;
+                dl.AddRectFilled(br - new Vector2(16, 12), br,
                     ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.75f)));
-                dl.AddText(br - new Vector2(14, 12),
+                dl.AddText(br - new Vector2(13, 10),
                     ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, 1f)), cnt);
             }
 
-            // Label below
+            // Label below card
             float lw2 = ImGui.CalcTextSize(label).X;
-            dl.AddText(new Vector2(x - lw2 * 0.5f, cardY + CardPile.Y * 0.5f + 2f),
+            dl.AddText(new Vector2(cx - lw2 * 0.5f, cy + cellH * 0.5f + 2f),
                 ImGui.ColorConvertFloat4ToU32(new Vector4(0.7f, 0.7f, 0.7f, 1f)), label);
 
-            // Tooltip on hover
-            if (IsMouseInRotatedRect(mousePos, center, CardPile.X, CardPile.Y, 0f))
+            if (IsMouseInRotatedRect(mousePos, center, cellW, cellH, 0f))
                 CardTooltip(r, topCard);
         }
 
-        DrawPile(DeckType.SpecialDeck,  "Arc. Pioche", centerX - pileSpacing, false);
-        DrawPile(DeckType.MainDeck,     "Pioche",      centerX,               false);
-        DrawPile(DeckType.DiscardDeck,  "Defausse",    centerX + pileSpacing, true);
+        float y0 = origin.Y;
+        float step = cellH + labelH + 2f + rowGap;
+        DrawPileRow(DeckType.MainDeck,     "Pioche",             y0,            false);
+        DrawPileRow(DeckType.SpecialDeck,  "Arc. Pioche",        y0 + step,     false);
+        DrawPileRow(DeckType.DiscardDeck,  "D\u00e9fausse",      y0 + step * 2, true);
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -884,7 +868,7 @@ public class GameTableService
         bool clicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
 
         // ── Value cards fan ──────────────────────────────────────────────
-        float fanCenterX = origin.X + zoneW * 0.49f;
+        float fanCenterX = origin.X + zoneW * 0.5f;
 
         int   n           = hand.Cards.Count;
         float spreadRad   = MathF.Min(FanMaxSpread * MathF.PI / 180f, n * 0.18f);
@@ -1013,7 +997,7 @@ public class GameTableService
                 ImGui.TextDisabled($"Multiplicateur: x{displayMult}");
             }
             else
-                ImGui.TextDisabled($"Valeur: {vc.DamageValue} degats");
+                ImGui.TextDisabled($"Valeur: {vc.DamageValue} d\u00e9g\u00e2ts");
             ImGui.TextDisabled($"Enseigne: {vc.Suit}");
         }
         else if (card is ArcanaCard ac)

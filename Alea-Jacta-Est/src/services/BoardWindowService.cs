@@ -103,7 +103,7 @@ public class BoardWindowService
             float boost = state.TurnStates.TryGetValue(localIdx, out var ts) && ts.MultiplierDoubled ? 2f : 1f;
             int total = _damageCalc.CalculateDamage(board.Cards, boost);
             ImGui.Separator();
-            ImGui.TextColored(new Vector4(1f, 0.4f, 0.3f, 1f), $"Total : {total} degats");
+            ImGui.TextColored(new Vector4(1f, 0.4f, 0.3f, 1f), $"Total : {total} d\u00e9g\u00e2ts");
         }
 
         ImGui.End();

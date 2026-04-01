@@ -122,6 +122,23 @@ public class ImGuiRenderer
     public virtual unsafe void RebuildFontAtlas()
     {
         var io = ImGuiNET.ImGui.GetIO();
+
+        // Add default font with extended Latin glyphs (accented chars: \u00e9\u00e8\u00ea\u00e0\u00e7\u00f4 etc.)
+        var glyphRanges = io.Fonts.GetGlyphRangesDefault();
+        // Build custom range that includes Basic Latin + Latin Supplement + Latin Extended-A
+        var builder = new ImFontGlyphRangesBuilderPtr(ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder());
+        builder.AddRanges(glyphRanges);
+        builder.AddChar((ushort)0x00C0); // \u00c0
+        builder.AddChar((ushort)0x00FF); // \u00ff — covers all Latin-1 Supplement
+        // Add full range 0x00C0-0x00FF (Latin accented characters)
+        for (ushort c = 0x00A0; c <= 0x00FF; c++)
+            builder.AddChar(c);
+        // Common French chars in Latin Extended
+        builder.AddChar((ushort)0x0152); // \u0152
+        builder.AddChar((ushort)0x0153); // \u0153
+        builder.BuildRanges(out ImVector customRanges);
+        io.Fonts.AddFontDefault(new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig()) { GlyphRanges = customRanges.Data });
+
         io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bytesPerPixel);
 
         var pixels = new byte[width * height * bytesPerPixel];

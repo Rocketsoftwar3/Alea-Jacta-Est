@@ -58,7 +58,7 @@ public class VictoryScreenService
             ImGui.TextColored(color, rank);
             ImGui.SameLine();
             string alive = player.Health > 0 ? "" : " (éliminé)";
-            ImGui.TextUnformatted($"  {player.Name}{alive}  -  {damage} degats infliges");
+            ImGui.TextUnformatted($"  {player.Name}{alive}  -  {damage} d\u00e9g\u00e2ts inflig\u00e9s");
         }
 
         ImGui.Spacing();
