@@ -76,6 +76,8 @@ public class Game1 : Game
 
         _imGuiRenderer = new ImGuiRenderer(this);
         _imGuiRenderer.RebuildFontAtlas();
+
+        _introDialogue.LoadAvatar(GraphicsDevice, _imGuiRenderer);
     }
 
     private void OnClientSizeChanged(object sender, System.EventArgs e)
@@ -134,8 +136,6 @@ public class Game1 : Game
         _mainMenu        = new MainMenuService(_lobby, _lan, _netCommandQueue, _demoData);
         _lobbyScreen     = new LobbyScreenService(_lobby, _network);
         _netErrorOverlay = new NetworkErrorOverlay(_netCommandQueue, _eventBus);
-
-        _introDialogue.LoadAvatar(GraphicsDevice, _imGuiRenderer);
 
         _eventBus.Subscribe<Events.ReturnedToMenu>(_ => OnReturnedToMenu());
 
