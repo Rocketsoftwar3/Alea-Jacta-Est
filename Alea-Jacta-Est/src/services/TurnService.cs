@@ -59,6 +59,7 @@ public class TurnService
             bool skipArcana = ts.BlockArcanaNextTurn;
             ts.BlockArcanaNextTurn = false;
 
+            // Auto-draw for all players
             DrawValueCards(player, Math.Max(0, pointCardsToDraw));
 
             // Impératrice envers: draw from arcana discard instead of special deck
@@ -368,7 +369,7 @@ public class TurnService
     }
 
     private static readonly Random _rng = new();
-    private static void Shuffle<T>(List<T> list)
+    internal static void Shuffle<T>(List<T> list)
     {
         for (int i = list.Count - 1; i > 0; i--)
         {

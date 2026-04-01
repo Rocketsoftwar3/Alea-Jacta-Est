@@ -16,21 +16,24 @@ public class EffectManager
         _events = events;
     }
 
-    public void PlayCard(GameState state, ArcanaCard card)
+    public void PlayCard(GameState state, ArcanaCard card, Player owner)
     {
         foreach (var effect in card.Effects)
         {
             effect.OnPlay(state, card);
 
             if (effect.Duration > 0)
-                _active.Add(new ActiveEffect(card, effect, effect.Duration));
+                _active.Add(new ActiveEffect(card, effect, effect.Duration, owner));
 
-            _events.Publish(new EffectApplied(card, effect));
+            _events.Publish(new EffectApplied(card, effect, owner));
         }
     }
 
     public IReadOnlyList<(string Name, int RemainingTurns)> GetActiveEffectSummary()
         => _active.Select(a => (a.Card.ArcanaName, a.RemainingTurns)).ToList();
+
+    public IReadOnlyList<(ArcanaCard Card, int RemainingTurns)> GetActiveEffectsForPlayer(Player player)
+        => _active.Where(a => a.Owner == player).Select(a => (a.Card, a.RemainingTurns)).ToList();
 
     public void OnTurnStart(GameState state)
     {
@@ -60,12 +63,14 @@ public class EffectManager
         public ArcanaCard Card { get; }
         public ICardEffect Effect { get; }
         public int RemainingTurns { get; set; }
+        public Player Owner { get; }
 
-        public ActiveEffect(ArcanaCard card, ICardEffect effect, int duration)
+        public ActiveEffect(ArcanaCard card, ICardEffect effect, int duration, Player owner)
         {
             Card = card;
             Effect = effect;
             RemainingTurns = duration;
+            Owner = owner;
         }
     }
 }

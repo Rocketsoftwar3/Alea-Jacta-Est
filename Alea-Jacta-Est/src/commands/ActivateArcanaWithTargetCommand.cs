@@ -23,7 +23,7 @@ public record ActivateArcanaWithTargetCommand(
         Activator.Decks[DeckType.ArcanaHandDeck].RemoveCard(Card);
         Activator.Decks[DeckType.ArcanaDiscardDeck].AddCard(Card);
 
-        EffectManager.PlayCard(state, Card);
+        EffectManager.PlayCard(state, Card, Activator);
         events.Publish(new CardPlayed(Activator, Card));
 
         state.PendingActivation = null;

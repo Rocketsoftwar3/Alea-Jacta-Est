@@ -35,6 +35,7 @@ public class Game1 : Game
     private DamageCalculationService _damageCalc;
     private CardFactory _cardFactory;
     private DemoDataService _demoData;
+    private GameLogService _gameLog;
 
     // Network / lobby
     private NetworkManager _network;
@@ -129,6 +130,15 @@ public class Game1 : Game
         _eventBus.Subscribe<Events.CardPlacedOnBoard>(_ => _gameRenderer.TriggerShake());
         _eventBus.Subscribe<Events.CardPlayed>(_ => _gameRenderer.TriggerShake());
         _eventBus.Subscribe<Events.TurnValidated>(_ => _gameRenderer.TriggerShake());
+
+        _gameLog = new GameLogService();
+        _eventBus.Subscribe<Events.CardPlacedOnBoard>(_gameLog.OnCardPlacedOnBoard);
+        _eventBus.Subscribe<Events.CardPlayed>(_gameLog.OnCardPlayed);
+        _eventBus.Subscribe<Events.TurnValidated>(_gameLog.OnTurnValidated);
+        _eventBus.Subscribe<Events.RoundResolved>(_gameLog.OnRoundResolved);
+        _eventBus.Subscribe<Events.PlayerEliminated>(_gameLog.OnPlayerEliminated);
+        _eventBus.Subscribe<Events.EffectApplied>(_gameLog.OnEffectApplied);
+        _eventBus.Subscribe<Events.CardPurchased>(_gameLog.OnCardPurchased);
         _demoData     = new DemoDataService(_cardFactory, _gfx);
 
         // Network / lobby (created before services so _netCommandQueue can be passed)
@@ -139,7 +149,7 @@ public class Game1 : Game
 
         var marketWindow  = new MarketWindowService(_netCommandQueue);
         var victoryScreen = new VictoryScreenService(_netCommandQueue, _demoData);
-        var gameTable     = new GameTableService(_netCommandQueue, _effectManager, _damageCalc);
+        var gameTable     = new GameTableService(_netCommandQueue, _effectManager, _damageCalc, _gameLog);
         _overlay          = new ImGuiOverlayService(gameTable, marketWindow, victoryScreen);
 
         _mainMenu        = new MainMenuService(_lobby, _lan, _netCommandQueue, _demoData);
@@ -247,8 +257,13 @@ public class Game1 : Game
                 {
                     case TurnPhase.DrawPhase:
                         _turnService.ExecuteDrawPhase(_state);
-                        if (!_state.IsSinglePlayer)
-                            _hostController!.BroadcastSnapshot();
+                        // After setup, check if local player finished clicking draws
+                        if (_turnService.IsDrawPhaseComplete(_state))
+                        {
+                            _turnService.FinishDrawPhase(_state);
+                            if (!_state.IsSinglePlayer)
+                                _hostController!.BroadcastSnapshot();
+                        }
                         break;
                     case TurnPhase.ResolutionPhase:
                         _turnService.ExecuteResolutionPhase(_state);

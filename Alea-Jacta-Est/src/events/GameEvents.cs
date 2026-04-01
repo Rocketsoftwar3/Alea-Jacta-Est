@@ -28,5 +28,5 @@ public record NetworkDisconnected(string Reason);
 public record ReturnedToMenu();
 
 // --- Effect events ---
-public record EffectApplied(Card Source, ICardEffect Effect);
+public record EffectApplied(Card Source, ICardEffect Effect, Player Owner);
 public record EffectExpired(Card Source, ICardEffect Effect);

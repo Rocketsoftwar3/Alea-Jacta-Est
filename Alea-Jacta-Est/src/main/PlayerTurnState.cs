@@ -70,6 +70,13 @@ public class PlayerTurnState
     /// <summary>Stored damage total to replay (set at end of current resolution).</summary>
     public int ReplicatedDamageTotal { get; set; }
 
+    // ── Draw Phase (click-to-draw) ─────────────────────────────────────────
+    /// <summary>Number of value cards the local player still needs to draw this turn.</summary>
+    public int ValueDrawsRemaining { get; set; }
+
+    /// <summary>Number of arcana cards the local player still needs to draw this turn.</summary>
+    public int ArcanaDrawsRemaining { get; set; }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     public void Reset()
@@ -97,5 +104,7 @@ public class PlayerTurnState
         AmoureuxShopPending = false;
         ReplicatePreviousTurn = false;
         ReplicatedDamageTotal = 0;
+        ValueDrawsRemaining = 0;
+        ArcanaDrawsRemaining = 0;
     }
 }

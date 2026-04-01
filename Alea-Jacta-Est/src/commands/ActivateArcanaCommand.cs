@@ -22,7 +22,7 @@ public record ActivateArcanaCommand(Player Player, ArcanaCard Card, Player? Targ
         Player.Decks[DeckType.ArcanaHandDeck].RemoveCard(Card);
         Player.Decks[DeckType.ArcanaDiscardDeck].AddCard(Card);
 
-        EffectManager.PlayCard(state, Card);
+        EffectManager.PlayCard(state, Card, Player);
         events.Publish(new CardPlayed(Player, Card));
 
         // Track arcana count for Chariot endroit limit
