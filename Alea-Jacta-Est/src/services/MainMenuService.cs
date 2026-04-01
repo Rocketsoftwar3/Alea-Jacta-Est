@@ -65,6 +65,10 @@ public class MainMenuService
         ImGui.Separator();
         ImGui.Spacing();
 
+        // ── Mute Button ───────────────────────────────────────────────────────
+        float muteX = winSize.X - 32f - 8f;
+        Alea_Jacta_Est.Utils.UIHelper.DrawMuteButton(new Vector2(muteX, 8f));
+
         // ── Error message ─────────────────────────────────────────────────────
         if (_lobby.ErrorMessage != null)
         {

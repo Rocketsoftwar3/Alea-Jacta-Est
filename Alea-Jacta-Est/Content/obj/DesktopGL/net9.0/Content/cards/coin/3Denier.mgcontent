@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <SourceFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/3Denier.png</SourceFile>
-  <SourceTime>2026-04-01T03:16:50.133421+02:00</SourceTime>
-  <DestFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/bin/DesktopGL/Content/cards/coin/3Denier.xnb</DestFile>
-  <DestTime>2026-04-01T04:36:19.9535757+02:00</DestTime>
+  <SourceFile>C:/Users/PC/Desktop/L3/Project new t/final/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/3Denier.png</SourceFile>
+  <SourceTime>2026-04-01T04:55:55.3256774+02:00</SourceTime>
+  <DestFile>C:/Users/PC/Desktop/L3/Project new t/final/Alea-Jacta-Est/Alea-Jacta-Est/Content/bin/DesktopGL/Content/cards/coin/3Denier.xnb</DestFile>
+  <DestTime>2026-04-01T05:39:07.3963176+02:00</DestTime>
   <Importer>TextureImporter</Importer>
   <ImporterTime>2025-10-20T16:25:32+02:00</ImporterTime>
   <Processor>TextureProcessor</Processor>

@@ -142,20 +142,33 @@ public class GameTableService
         // ── Gold: coin icon + amount, top-right of window ────────────
         string walletStr = $"{state.LocalPlayer.Wallet}";
         float textW  = ImGui.CalcTextSize(walletStr).X;
-        float goldX  = W - textW - 20f - 8f; // 20px coin + 4px gap + 8px margin
+        float goldX  = W - textW - 20f - 8f - 40f; // Shifted left to make room for mute button
         ImGui.SetCursorPos(new Vector2(goldX, 7f));
         ImGui.Image(_goldCoinId, new Vector2(16, 16));
         ImGui.SameLine(0, 4);
         ImGui.TextColored(new Vector4(1f, 0.85f, 0.2f, 1f), walletStr);
+
+        // ── Mute Button (Pixel Art Speaker) ──────────────────────────
+        float muteX = W - 32f - 8f; 
+        Alea_Jacta_Est.Utils.UIHelper.DrawMuteButton(new Vector2(muteX, 4f));
     }
 
     // ────────────────────────────────────────────────────────────────
     // Opponent zones — fan upward (verso) + arcana pile
     // ────────────────────────────────────────────────────────────────
 
-    private static void RenderOpponents(GameState state, List<Player> opponents, ImGuiRenderer r, float W, float oppH)
+    private void RenderOpponents(GameState state, List<Player> opponents, ImGuiRenderer r, float W, float oppH)
     {
         if (opponents.Count == 0) return;
+
+        int pendingDamage = 0;
+        if (state.CurrentTurnPhase == TurnPhase.PlayPhase)
+        {
+            int localIdx = state.Players.IndexOf(state.LocalPlayer);
+            float bst = state.TurnStates.TryGetValue(localIdx, out var lts2) && lts2.MultiplierDoubled ? 2f : 1f;
+            var board = state.LocalPlayer.Decks[DeckType.BoardDeck0];
+            pendingDamage = _damageCalc.CalculateDamage(board.Cards, bst);
+        }
 
         const float spacing = 6f;
         float slotW = (W - spacing * (opponents.Count - 1)) / opponents.Count;
@@ -167,13 +180,46 @@ public class GameTableService
             var opp = opponents[i];
             ImGui.BeginChild($"##opp{i}", new Vector2(slotW, oppH - spacing), ImGuiChildFlags.Borders);
 
-            // ── Name + HP bar ─────────────────────────────────────────
+            // ── Name + HP bar (Custom with Preview) ───────────────────
             ImGui.TextUnformatted(opp.Name);
             ImGui.SameLine(0, 8);
-            float f = Math.Clamp(opp.Health / 100f, 0f, 1f);
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, HpColor(f));
-            ImGui.ProgressBar(f, new Vector2(-1, 18), $"{opp.Health}/100");
-            ImGui.PopStyleColor();
+            
+            var hpPos = ImGui.GetCursorScreenPos();
+            var hpSize = new Vector2(Math.Max(10f, ImGui.GetContentRegionAvail().X), 18f);
+            ImGui.Dummy(hpSize); // Reserve space
+            
+            var dl = ImGui.GetWindowDrawList();
+            
+            uint bgCol = ImGui.ColorConvertFloat4ToU32(new Vector4(0.1f, 0.1f, 0.1f, 1f));
+            dl.AddRectFilled(hpPos, hpPos + hpSize, bgCol);
+            
+            float currentHpRatio = Math.Clamp(opp.Health / 100f, 0f, 1f);
+            float futureHpRatio = Math.Clamp((opp.Health - pendingDamage) / 100f, 0f, 1f);
+            
+            float currentW = hpSize.X * currentHpRatio;
+            float futureW = hpSize.X * futureHpRatio;
+
+            if (futureW > 0f)
+                dl.AddRectFilled(hpPos, hpPos + new Vector2(futureW, hpSize.Y), ImGui.ColorConvertFloat4ToU32(HpColor(futureHpRatio)));
+            
+            if (pendingDamage > 0 && opp.Health > 0)
+            {
+                float dmgW = currentW - futureW;
+                if (dmgW > 0f)
+                {
+                    float time = (float)ImGui.GetTime();
+                    float alpha = 0.5f + 0.3f * MathF.Sin(time * 8f);
+                    uint previewCol = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.3f, 0.1f, alpha));
+                    dl.AddRectFilled(hpPos + new Vector2(futureW, 0), hpPos + new Vector2(currentW, hpSize.Y), previewCol);
+                }
+            }
+
+            dl.AddRect(hpPos, hpPos + hpSize, ImGui.ColorConvertFloat4ToU32(new Vector4(0.8f, 0.6f, 0.2f, 1f)), 0f, 0, 1f);
+
+            string hpText = $"{opp.Health}/100";
+            if (pendingDamage > 0 && opp.Health > 0) hpText += $" (-{pendingDamage})";
+            Vector2 ts = ImGui.CalcTextSize(hpText);
+            dl.AddText(hpPos + new Vector2((hpSize.X - ts.X)/2f, (hpSize.Y - ts.Y)/2f), ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, 1f)), hpText);
 
             // ── Arcana deck pile (small, top-left of box) ────────────
             if (opp.Decks.TryGetValue(DeckType.SpecialDeck, out var arcDeck) && arcDeck.Cards.Count > 0)
@@ -221,6 +267,18 @@ public class GameTableService
                                : c is ArcanaCard ac2 ? ac2.ArcanaName : c.TextureRecto.Name;
                     ImGui.TextDisabled($"  {lbl}");
                 }
+            }
+
+            // ── Death states ─────────────────────────────────────────
+            bool willDie = (opp.Health - pendingDamage) <= 0 && pendingDamage > 0;
+            bool isDead = opp.Health <= 0;
+            if (willDie || isDead)
+            {
+                var cwMin = ImGui.GetWindowPos();
+                var cwMax = cwMin + ImGui.GetWindowSize();
+                uint crossCol = isDead ? ImGui.ColorConvertFloat4ToU32(new Vector4(0.8f, 0.1f, 0.1f, 0.7f)) : ImGui.ColorConvertFloat4ToU32(new Vector4(0.8f, 0.1f, 0.1f, 0.4f));
+                dl.AddLine(cwMin, cwMax, crossCol, 8f);
+                dl.AddLine(new Vector2(cwMax.X, cwMin.Y), new Vector2(cwMin.X, cwMax.Y), crossCol, 8f);
             }
 
             ImGui.EndChild();
@@ -399,25 +457,17 @@ public class GameTableService
         bool isActionPhase = (isPlayPhase && !alreadyVal) || isShopPhase;
         string actionLabel = isShopPhase ? "Fin de boutique" : "Valider le tour";
 
-        Vector4 btnColor        = isShopPhase ? new(0.60f, 0.35f, 0.08f, 1f) : new(0.15f, 0.60f, 0.25f, 1f);
-        Vector4 btnColorHovered = isShopPhase ? new(0.78f, 0.50f, 0.15f, 1f) : new(0.25f, 0.78f, 0.35f, 1f);
-        Vector4 btnColorActive  = isShopPhase ? new(0.45f, 0.25f, 0.05f, 1f) : new(0.10f, 0.45f, 0.18f, 1f);
+        Vector4 btnColor = isShopPhase ? new Vector4(0.60f, 0.35f, 0.08f, 1f) : new Vector4(0.15f, 0.60f, 0.25f, 1f);
 
-        if (!isActionPhase) ImGui.BeginDisabled();
-        ImGui.PushStyleColor(ImGuiCol.Button,        btnColor);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, btnColorHovered);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive,  btnColorActive);
-        if (ImGui.Button(actionLabel, new Vector2(160, 30)))
+        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_action", actionLabel, new Vector2(160, 30), btnColor, !isActionPhase))
         {
             if (isShopPhase) _commands.Enqueue(new EndShopPhaseCommand(localIdx));
             else             _commands.Enqueue(new ValidateTurnCommand(localIdx));
         }
-        ImGui.PopStyleColor(3);
-        if (!isActionPhase) ImGui.EndDisabled();
 
         ImGui.SameLine(0, 8);
         string boutiqueLabel = marketOpen ? "Fermer" : "Boutique";
-        if (ImGui.Button(boutiqueLabel, new Vector2(90, 30)))
+        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_shop", boutiqueLabel, new Vector2(90, 30), new Vector4(0.2f, 0.3f, 0.6f, 1f), false))
             marketOpen = !marketOpen;
 
         // ── Target selection ─────────────────────────────────────────
@@ -594,8 +644,8 @@ public class GameTableService
         var mousePos = ImGui.GetIO().MousePos;
         bool clicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
 
-        // ── Value cards fan (left 75% of zone) ───────────────────────
-        float fanCenterX = origin.X + zoneW * 0.42f;
+        // ── Value cards fan ──────────────────────────────────────────────
+        float fanCenterX = origin.X + zoneW * 0.49f;
 
         int   n           = hand.Cards.Count;
         float spreadRad   = MathF.Min(FanMaxSpread * MathF.PI / 180f, n * 0.18f);
@@ -605,7 +655,8 @@ public class GameTableService
         // Compute anchorY so the lowest card bottom stays within the Dummy
         float maxAngle = n > 1 ? spreadRad / 2f : 0f;
         float outerDy  = FanRadius * (1f - MathF.Cos(maxAngle));
-        float anchorY  = origin.Y + FanH - outerDy - CardFan.Y * 0.5f - 6f;
+        float verticalOffset = ImGui.GetIO().DisplaySize.Y * 0.02f;
+        float anchorY  = origin.Y + FanH - outerDy - CardFan.Y * 0.5f - 6f - verticalOffset;
 
         var positions = new (Vector2 center, float angle)[n];
         for (int i = 0; i < n; i++)

@@ -58,8 +58,67 @@ public class ImGuiRenderer
             if (a.Character != '\t')
                 ImGuiNET.ImGui.GetIO().AddInputCharacter(a.Character);
         };
+
+        ApplyGothicRpgTheme();
     }
 
+    private void ApplyGothicRpgTheme()
+    {
+        var style = ImGuiNET.ImGui.GetStyle();
+        var colors = style.Colors;
+
+        // Dark gothic/RPG palette with golden/brass accents
+        // Keep window backgrounds semi-transparent so the MonoGame background shows through
+        colors[(int)ImGuiCol.Text]                  = new System.Numerics.Vector4(0.92f, 0.88f, 0.85f, 1.00f);
+        colors[(int)ImGuiCol.TextDisabled]          = new System.Numerics.Vector4(0.60f, 0.55f, 0.50f, 1.00f);
+        
+        colors[(int)ImGuiCol.WindowBg]              = new System.Numerics.Vector4(0.08f, 0.05f, 0.05f, 0.88f);
+        colors[(int)ImGuiCol.ChildBg]               = new System.Numerics.Vector4(0.12f, 0.08f, 0.08f, 0.60f);
+        colors[(int)ImGuiCol.PopupBg]               = new System.Numerics.Vector4(0.10f, 0.06f, 0.06f, 0.95f);
+        
+        colors[(int)ImGuiCol.Border]                = new System.Numerics.Vector4(0.40f, 0.30f, 0.15f, 0.90f); // Brass/Gold border
+        colors[(int)ImGuiCol.BorderShadow]          = new System.Numerics.Vector4(0.00f, 0.00f, 0.00f, 0.60f);
+        
+        colors[(int)ImGuiCol.FrameBg]               = new System.Numerics.Vector4(0.15f, 0.10f, 0.10f, 1.00f);
+        colors[(int)ImGuiCol.FrameBgHovered]        = new System.Numerics.Vector4(0.25f, 0.15f, 0.15f, 1.00f);
+        colors[(int)ImGuiCol.FrameBgActive]         = new System.Numerics.Vector4(0.35f, 0.20f, 0.20f, 1.00f);
+        
+        colors[(int)ImGuiCol.TitleBg]               = new System.Numerics.Vector4(0.15f, 0.10f, 0.10f, 0.95f);
+        colors[(int)ImGuiCol.TitleBgActive]         = new System.Numerics.Vector4(0.25f, 0.15f, 0.15f, 0.95f);
+        colors[(int)ImGuiCol.TitleBgCollapsed]      = new System.Numerics.Vector4(0.10f, 0.05f, 0.05f, 0.90f);
+        
+        colors[(int)ImGuiCol.Button]                = new System.Numerics.Vector4(0.20f, 0.12f, 0.12f, 1.00f);
+        colors[(int)ImGuiCol.ButtonHovered]         = new System.Numerics.Vector4(0.35f, 0.22f, 0.18f, 1.00f);
+        colors[(int)ImGuiCol.ButtonActive]          = new System.Numerics.Vector4(0.50f, 0.30f, 0.20f, 1.00f);
+        
+        colors[(int)ImGuiCol.CheckMark]             = new System.Numerics.Vector4(0.80f, 0.70f, 0.40f, 1.00f); // Gold checkmark
+        colors[(int)ImGuiCol.SliderGrab]            = new System.Numerics.Vector4(0.80f, 0.70f, 0.40f, 1.00f);
+        colors[(int)ImGuiCol.SliderGrabActive]      = new System.Numerics.Vector4(0.95f, 0.85f, 0.55f, 1.00f);
+        
+        colors[(int)ImGuiCol.Header]                = new System.Numerics.Vector4(0.25f, 0.15f, 0.15f, 1.00f);
+        colors[(int)ImGuiCol.HeaderHovered]         = new System.Numerics.Vector4(0.35f, 0.22f, 0.18f, 1.00f);
+        colors[(int)ImGuiCol.HeaderActive]          = new System.Numerics.Vector4(0.50f, 0.30f, 0.20f, 1.00f);
+        
+        colors[(int)ImGuiCol.Separator]             = new System.Numerics.Vector4(0.40f, 0.30f, 0.15f, 0.70f);
+        colors[(int)ImGuiCol.SeparatorHovered]      = new System.Numerics.Vector4(0.60f, 0.45f, 0.25f, 0.90f);
+        colors[(int)ImGuiCol.SeparatorActive]       = new System.Numerics.Vector4(0.70f, 0.55f, 0.35f, 1.00f);
+
+        // Styling (rounding, borders)
+        style.WindowRounding    = 4.0f;
+        style.ChildRounding     = 4.0f;
+        style.FrameRounding     = 3.0f;
+        style.PopupRounding     = 4.0f;
+        style.ScrollbarRounding = 9.0f;
+        style.GrabRounding      = 3.0f;
+        style.TabRounding       = 4.0f;
+
+        style.WindowBorderSize  = 2.0f;
+        style.FrameBorderSize   = 1.0f;
+        style.PopupBorderSize   = 1.0f;
+
+        style.ItemSpacing       = new System.Numerics.Vector2(8, 6);
+        style.FramePadding      = new System.Numerics.Vector2(8, 4);
+    }
     public virtual unsafe void RebuildFontAtlas()
     {
         var io = ImGuiNET.ImGui.GetIO();

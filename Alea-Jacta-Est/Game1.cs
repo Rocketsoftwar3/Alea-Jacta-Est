@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using Alea_Jacta_Est.Commands;
 using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Events;
@@ -8,6 +10,8 @@ using Alea_Jacta_Est.Rendering;
 using Alea_Jacta_Est.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
+using Microsoft.Xna.Framework.Audio;
 
 namespace Alea_Jacta_Est;
 
@@ -42,8 +46,10 @@ public class Game1 : Game
     private MainMenuService _mainMenu;
     private LobbyScreenService _lobbyScreen;
     private NetworkErrorOverlay _netErrorOverlay;
+    private IntroDialogueService _introDialogue;
 
     private bool _isResizing;
+    public static SoundEffectInstance BgmInstance { get; private set; }
 
     public Game1()
     {
@@ -58,6 +64,8 @@ public class Game1 : Game
         _graphics.PreferredBackBufferWidth  = 1280;
         _graphics.PreferredBackBufferHeight = 720;
         _graphics.ApplyChanges();
+
+        _introDialogue = new IntroDialogueService();
     }
 
     protected override void Initialize()
@@ -127,7 +135,35 @@ public class Game1 : Game
         _lobbyScreen     = new LobbyScreenService(_lobby, _network);
         _netErrorOverlay = new NetworkErrorOverlay(_netCommandQueue, _eventBus);
 
+        _introDialogue.LoadAvatar(GraphicsDevice, _imGuiRenderer);
+
         _eventBus.Subscribe<Events.ReturnedToMenu>(_ => OnReturnedToMenu());
+
+        // Background Music
+        try
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string devPath = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\AleaJactaEstMusique.wav"));
+            string devPathContent = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\Content\music\AleaJactaEstMusique.wav"));
+            string contentPath = Path.Combine("Content", "music", "AleaJactaEstMusique.wav");
+
+            string musicPath = null;
+            if (File.Exists("AleaJactaEstMusique.wav")) musicPath = "AleaJactaEstMusique.wav";
+            else if (File.Exists(contentPath)) musicPath = contentPath;
+            else if (File.Exists(devPathContent)) musicPath = devPathContent;
+            else if (File.Exists(devPath)) musicPath = devPath;
+
+            if (musicPath != null)
+            {
+                using var stream = File.OpenRead(musicPath);
+                var bgm = SoundEffect.FromStream(stream);
+                BgmInstance = bgm.CreateInstance();
+                BgmInstance.IsLooped = true;
+                BgmInstance.Volume = 0.5f;
+                BgmInstance.Play();
+            }
+        }
+        catch { /* ignored if no audio device */ }
     }
 
     protected override void Update(GameTime gameTime)
@@ -136,6 +172,13 @@ public class Game1 : Game
 
         if (_inputService.IsExitRequested())
             Exit();
+
+        if (!_introDialogue.IsFinished)
+        {
+            _introDialogue.Update(gameTime);
+            base.Update(gameTime);
+            return;
+        }
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -254,7 +297,11 @@ public class Game1 : Game
 
         _imGuiRenderer.BeforeLayout(gameTime);
 
-        if (_state.Phase == GamePhase.WaitingForPlayers)
+        if (!_introDialogue.IsFinished)
+        {
+            _introDialogue.Render((float)gameTime.ElapsedGameTime.TotalSeconds);
+        }
+        else if (_state.Phase == GamePhase.WaitingForPlayers)
         {
             // Show main menu or lobby screen
             if (_lobby.State == LobbyState.Disconnected)

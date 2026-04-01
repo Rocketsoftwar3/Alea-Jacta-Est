@@ -144,11 +144,36 @@ public class HUDService
             else
                 ImGui.TextUnformatted($"{prefix}{player.Name}");
 
-            // HP progress bar
+            // Custom RPG Health Bar
             float hpFraction = Math.Clamp(player.Health / 100f, 0f, 1f);
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, HpColor(hpFraction));
-            ImGui.ProgressBar(hpFraction, new Vector2(-1, 14), $"PV {player.Health} / 100");
-            ImGui.PopStyleColor();
+            var drawList = ImGui.GetWindowDrawList();
+            var pos = ImGui.GetCursorScreenPos();
+            var size = new Vector2(ImGui.GetContentRegionAvail().X, 18);
+            
+            // Background
+            drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(new Vector4(0.1f, 0.05f, 0.05f, 1.0f)), 3.0f);
+            
+            // Fill
+            var hpColor = HpColor(hpFraction);
+            var fillSize = new Vector2(size.X * hpFraction, size.Y);
+            if (hpFraction > 0)
+            {
+                drawList.AddRectFilled(pos, pos + fillSize, ImGui.GetColorU32(hpColor), 3.0f);
+            }
+            
+            // Border (Brass/Gold)
+            drawList.AddRect(pos, pos + size, ImGui.GetColorU32(new Vector4(0.6f, 0.5f, 0.2f, 1.0f)), 3.0f, ImDrawFlags.None, 1.5f);
+            
+            // Text
+            string hpText = $"PV {player.Health} / 100";
+            var textSize = ImGui.CalcTextSize(hpText);
+            var textPos = pos + new Vector2((size.X - textSize.X) * 0.5f, (size.Y - textSize.Y) * 0.5f);
+            
+            // Text shadow for readability
+            drawList.AddText(textPos + new Vector2(1, 1), ImGui.GetColorU32(new Vector4(0, 0, 0, 1)), hpText);
+            drawList.AddText(textPos, ImGui.GetColorU32(new Vector4(1, 1, 1, 1)), hpText);
+            
+            ImGui.Dummy(size); // Advance cursor
 
             if (isLocal)
             {
@@ -223,12 +248,16 @@ public class HUDService
         // Validate turn button — green, PlayPhase only and only when it's the local player's turn
         bool validateDisabled = !isPlayPhase || alreadyValidated || !state.IsLocalPlayerTurn;
         if (validateDisabled) ImGui.BeginDisabled();
-        ImGui.PushStyleColor(ImGuiCol.Button,       new Vector4(0.15f, 0.60f, 0.25f, 1f));
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.25f, 0.78f, 0.35f, 1f));
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.10f, 0.45f, 0.18f, 1f));
+        // Gothic Emerald Validation Button
+        ImGui.PushStyleColor(ImGuiCol.Button,       new Vector4(0.10f, 0.35f, 0.15f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.15f, 0.50f, 0.20f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.08f, 0.28f, 0.12f, 1f));
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1.5f);
+        ImGui.PushStyleColor(ImGuiCol.Border,        new Vector4(0.30f, 0.60f, 0.25f, 1f));
         if (ImGui.Button("Valider le tour", new Vector2(-1, 36)))
             _commands.Enqueue(new ValidateTurnCommand(localIdx));
-        ImGui.PopStyleColor(3);
+        ImGui.PopStyleColor(4);
+        ImGui.PopStyleVar();
         if (validateDisabled) ImGui.EndDisabled();
 
         // Auto-validate countdown (shown to the current active player only)
@@ -244,19 +273,27 @@ public class HUDService
 
         // End shop button — orange, ShopPhase only
         if (!isShopPhase) ImGui.BeginDisabled();
-        ImGui.PushStyleColor(ImGuiCol.Button,       new Vector4(0.65f, 0.38f, 0.08f, 1f));
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.82f, 0.52f, 0.15f, 1f));
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.50f, 0.28f, 0.05f, 1f));
+        // Gothic Amber End Shop Button
+        ImGui.PushStyleColor(ImGuiCol.Button,       new Vector4(0.40f, 0.20f, 0.05f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.60f, 0.30f, 0.08f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.30f, 0.15f, 0.04f, 1f));
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1.5f);
+        ImGui.PushStyleColor(ImGuiCol.Border,        new Vector4(0.70f, 0.40f, 0.15f, 1f));
         if (ImGui.Button("Fin de boutique", new Vector2(-1, 30)))
             _commands.Enqueue(new EndShopPhaseCommand(localIdx));
-        ImGui.PopStyleColor(3);
+        ImGui.PopStyleColor(4);
+        ImGui.PopStyleVar();
         if (!isShopPhase) ImGui.EndDisabled();
 
         // Market toggle
         ImGui.Spacing();
         string marketLabel = marketOpen ? "Fermer le Marché" : "Ouvrir le Marché";
+        ImGui.PushStyleColor(ImGuiCol.Button,       new Vector4(0.25f, 0.15f, 0.30f, 1f)); // Gothic Purple
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.35f, 0.20f, 0.45f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.20f, 0.10f, 0.25f, 1f));
         if (ImGui.Button(marketLabel, new Vector2(-1, 28)))
             marketOpen = !marketOpen;
+        ImGui.PopStyleColor(3);
     }
 
     private void RenderTargetSelection(GameState state)
@@ -272,9 +309,17 @@ public class HUDService
             var target = state.Players[i];
             float f = Math.Clamp(target.Health / 100f, 0f, 1f);
 
-            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, HpColor(f));
-            ImGui.ProgressBar(f, new Vector2(60, 10), "");
-            ImGui.PopStyleColor();
+            var targetDrawList = ImGui.GetWindowDrawList();
+            var targetPos = ImGui.GetCursorScreenPos();
+            var targetSize = new Vector2(60, 16);
+            
+            targetDrawList.AddRectFilled(targetPos, targetPos + targetSize, ImGui.GetColorU32(new Vector4(0.1f, 0.05f, 0.05f, 1.0f)), 2.0f);
+            var targetHpColor = HpColor(f);
+            if (f > 0)
+                targetDrawList.AddRectFilled(targetPos, targetPos + new Vector2(targetSize.X * f, targetSize.Y), ImGui.GetColorU32(targetHpColor), 2.0f);
+            targetDrawList.AddRect(targetPos, targetPos + targetSize, ImGui.GetColorU32(new Vector4(0.6f, 0.5f, 0.2f, 1.0f)), 2.0f, ImDrawFlags.None, 1.0f);
+            
+            ImGui.Dummy(targetSize);
 
             ImGui.SameLine();
             string suffix = target == pending.Activator ? " (toi)" : "";
