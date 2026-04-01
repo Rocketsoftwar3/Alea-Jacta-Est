@@ -13,9 +13,9 @@ public class MarketWindowService
 {
     private static readonly Vector2 CardThumbSize = new(36, 60);
 
-    private readonly CommandQueue _commands;
+    private readonly ICommandQueue _commands;
 
-    public MarketWindowService(CommandQueue commands)
+    public MarketWindowService(ICommandQueue commands)
     {
         _commands = commands;
     }

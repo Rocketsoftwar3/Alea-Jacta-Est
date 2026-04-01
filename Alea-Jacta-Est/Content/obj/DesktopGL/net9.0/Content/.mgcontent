@@ -47,8 +47,36 @@
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/chevalierBaton.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/reineBaton.png</File>
     <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/roiBaton.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/1Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/2Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/3Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/4Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/5Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/6Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/7Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/8Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/9Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/10Denier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/valetDenier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/chevalierDenier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/reineDenier.png</File>
+    <File>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/coin/roiDenier.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />

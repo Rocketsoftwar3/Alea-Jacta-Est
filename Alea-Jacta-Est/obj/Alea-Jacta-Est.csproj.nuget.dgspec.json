@@ -48,6 +48,14 @@
               "target": "Package",
               "version": "[1.91.6.1, )"
             },
+            "LiteNetLib": {
+              "target": "Package",
+              "version": "[1.2.*, )"
+            },
+            "MessagePack": {
+              "target": "Package",
+              "version": "[3.1.*, )"
+            },
             "MonoGame.Content.Builder.Task": {
               "target": "Package",
               "version": "[3.8.*, )"

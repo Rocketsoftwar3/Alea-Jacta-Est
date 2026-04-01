@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <SourceFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/stick/7Baton.png</SourceFile>
-  <SourceTime>2026-03-31T23:27:11.307324+02:00</SourceTime>
+  <SourceTime>2026-04-01T03:16:18.9236829+02:00</SourceTime>
   <DestFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/bin/DesktopGL/Content/cards/stick/7Baton.xnb</DestFile>
-  <DestTime>2026-03-31T23:38:49.6179258+02:00</DestTime>
+  <DestTime>2026-04-01T03:17:14.0444034+02:00</DestTime>
   <Importer>TextureImporter</Importer>
   <ImporterTime>2025-10-20T16:25:32+02:00</ImporterTime>
   <Processor>TextureProcessor</Processor>

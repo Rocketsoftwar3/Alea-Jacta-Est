@@ -62,6 +62,12 @@ public class TurnService
             }
         }
 
+        // Reset active player to first alive player at the start of each play phase.
+        state.CurrentPlayerIndex = 0;
+        while (state.CurrentPlayerIndex < state.Players.Count
+               && state.Players[state.CurrentPlayerIndex].Health <= 0)
+            state.CurrentPlayerIndex++;
+
         state.AdvanceTurnPhase(); // DrawPhase → PlayPhase
         _events.Publish(new TurnPhaseChanged(state.CurrentTurnPhase));
     }
@@ -72,12 +78,14 @@ public class TurnService
     {
         if (state.CurrentTurnPhase != TurnPhase.ResolutionPhase) return;
 
-        // TODO: Réseau — attendre que tous les joueurs aient validé
-        // Proto solo : auto-valider tous les adversaires
-        for (int i = 0; i < state.Players.Count; i++)
+        // Solo: auto-validate all non-local players (AI slots).
+        if (state.IsSinglePlayer)
         {
-            if (!state.Players[i].IsLocalPlayer)
-                state.TurnStates[i].HasValidated = true;
+            for (int i = 0; i < state.Players.Count; i++)
+            {
+                if (!state.Players[i].IsLocalPlayer)
+                    state.TurnStates[i].HasValidated = true;
+            }
         }
 
         // ── 1. Calculate raw damage per player ───────────────────────────────
@@ -86,16 +94,12 @@ public class TurnService
             var player = state.Players[i];
             var ts = state.TurnStates[i];
 
-            if (player.IsLocalPlayer)
+            // In solo mode only the local player has real cards; other slots have none.
+            bool hasRealCards = !state.IsSinglePlayer || player.IsLocalPlayer;
+
+            if (hasRealCards)
             {
-                float boost = ts.MultiplierDoubled ? 2f : 1f;
-                ts.MultiplierDoubled = false;
-                ts.DamageTotal = _damageCalc.CalculateDamage(player.Decks["BoardDeck0"].Cards, boost);
-                ts.MoneyEarned = _damageCalc.CalculateMoney(player.Decks["HandDeck"].Cards);
-            }
-            else
-            {
-                // Amoureux envers replicated turn: use stored damage
+                // Amoureux envers replicated turn: use stored damage instead of recalculating.
                 if (ts.ReplicatePreviousTurn)
                 {
                     ts.DamageTotal = ts.ReplicatedDamageTotal;
@@ -103,9 +107,16 @@ public class TurnService
                 }
                 else
                 {
-                    ts.DamageTotal = 0;
-                    ts.MoneyEarned = 0;
+                    float boost = ts.MultiplierDoubled ? 2f : 1f;
+                    ts.MultiplierDoubled = false;
+                    ts.DamageTotal = _damageCalc.CalculateDamage(player.Decks["BoardDeck0"].Cards, boost);
+                    ts.MoneyEarned = _damageCalc.CalculateMoney(player.Decks["HandDeck"].Cards);
                 }
+            }
+            else
+            {
+                ts.DamageTotal = 0;
+                ts.MoneyEarned = 0;
             }
         }
 

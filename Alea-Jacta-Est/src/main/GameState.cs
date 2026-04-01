@@ -30,7 +30,11 @@ public class GameState
     public TurnPhase CurrentTurnPhase { get; set; }
     public int CurrentPlayerIndex { get; set; }
     public int CurrentTurn { get; set; }
-    public Player LocalPlayer { get; }
+    /// <summary>The player on this machine. Computed from IsLocalPlayer flag so it works in multiplayer.</summary>
+    public Player LocalPlayer => Players.FirstOrDefault(p => p.IsLocalPlayer) ?? Players[0];
+
+    /// <summary>True when running a single-player demo game (no network).</summary>
+    public bool IsSinglePlayer { get; set; }
 
     /// <summary>Per-player round state keyed by player index in Players list.</summary>
     public Dictionary<int, PlayerTurnState> TurnStates { get; }
@@ -45,7 +49,14 @@ public class GameState
         ? Players[CurrentPlayerIndex]
         : null;
 
-    public bool AllPlayersValidated => TurnStates.Values.All(s => s.HasValidated);
+    /// <summary>True when the local player is the active player (or in single-player mode).</summary>
+    public bool IsLocalPlayerTurn => IsSinglePlayer || CurrentPlayer == LocalPlayer;
+
+    public bool AllPlayersValidated  => TurnStates.Values.All(s => s.HasValidated);
+    public bool AllPlayersEndedShop  => TurnStates.Values.All(s => s.HasEndedShop);
+
+    /// <summary>Set by HostGameController each frame. 0 = timer not running. Used by HUD to display countdown.</summary>
+    public float ValidateSecondsRemaining { get; set; }
 
     public GameState(string localPlayerName)
     {
@@ -55,8 +66,7 @@ public class GameState
         CurrentPlayerIndex = 0;
         CurrentTurn = 1;
 
-        LocalPlayer = new Player(localPlayerName, isLocalPlayer: true);
-        Players.Add(LocalPlayer);
+        Players.Add(new Player(localPlayerName, isLocalPlayer: true));
 
         TurnStates = new Dictionary<int, PlayerTurnState>();
     }

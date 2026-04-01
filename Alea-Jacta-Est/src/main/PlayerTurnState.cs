@@ -9,6 +9,9 @@ public class PlayerTurnState
     public int MoneyEarned { get; set; }
     public bool HasSoldThisRound { get; set; }
 
+    /// <summary>Multiplayer: true once this player has clicked "Fin de boutique".</summary>
+    public bool HasEndedShop { get; set; }
+
     /// <summary>Cumulative damage dealt across ALL turns (never reset).</summary>
     public int TotalDamageDealt { get; set; }
 
@@ -69,6 +72,7 @@ public class PlayerTurnState
         DamageTotal = 0;
         MoneyEarned = 0;
         HasSoldThisRound = false;
+        HasEndedShop = false;
         // TotalDamageDealt is cumulative — never reset
 
         MultiplierDoubled = false;

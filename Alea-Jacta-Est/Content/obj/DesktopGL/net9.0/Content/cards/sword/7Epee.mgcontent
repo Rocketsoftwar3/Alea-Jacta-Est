@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <SourceFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/cards/sword/7Epee.png</SourceFile>
-  <SourceTime>2026-03-31T23:48:42.5268247+02:00</SourceTime>
+  <SourceTime>2026-04-01T03:16:18.9830458+02:00</SourceTime>
   <DestFile>G:/.dev/net/Alea-Jacta-Est/Alea-Jacta-Est/Content/bin/DesktopGL/Content/cards/sword/7Epee.xnb</DestFile>
-  <DestTime>2026-03-31T23:54:18.4297257+02:00</DestTime>
+  <DestTime>2026-04-01T03:17:08.788827+02:00</DestTime>
   <Importer>TextureImporter</Importer>
   <ImporterTime>2025-10-20T16:25:32+02:00</ImporterTime>
   <Processor>TextureProcessor</Processor>

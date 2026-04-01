@@ -20,6 +20,13 @@ public record TurnValidated(Player Player);
 public record RoundResolved(IReadOnlyDictionary<Player, int> Damages);
 public record PlayerEliminated(Player Player);
 
+// --- Network events ---
+public record PlayerDisconnected(int PlayerIndex, string PlayerName);
+public record NetworkDisconnected(string Reason);
+
+// --- Menu events ---
+public record ReturnedToMenu();
+
 // --- Effect events ---
 public record EffectApplied(Card Source, ICardEffect Effect);
 public record EffectExpired(Card Source, ICardEffect Effect);

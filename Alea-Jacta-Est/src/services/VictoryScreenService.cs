@@ -7,10 +7,10 @@ namespace Alea_Jacta_Est.Services;
 
 public class VictoryScreenService
 {
-    private readonly CommandQueue _commands;
+    private readonly ICommandQueue _commands;
     private readonly DemoDataService _demoData;
 
-    public VictoryScreenService(CommandQueue commands, DemoDataService demoData)
+    public VictoryScreenService(ICommandQueue commands, DemoDataService demoData)
     {
         _commands = commands;
         _demoData = demoData;
@@ -27,7 +27,7 @@ public class VictoryScreenService
         dl.AddRectFilled(Vector2.Zero, io.DisplaySize,
             ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 0f, 0f, 0.65f)));
 
-        var windowSize = new Vector2(420, 300);
+        var windowSize = new Vector2(420, 340);
         var center = new Vector2((io.DisplaySize.X - windowSize.X) * 0.5f, (io.DisplaySize.Y - windowSize.Y) * 0.5f);
 
         ImGui.SetNextWindowPos(center, ImGuiCond.Always);
@@ -66,9 +66,18 @@ public class VictoryScreenService
         ImGui.Spacing();
 
         float btnWidth = 160f;
-        ImGui.SetCursorPosX((windowSize.X - btnWidth) * 0.5f);
-        if (ImGui.Button("Nouvelle Partie", new Vector2(btnWidth, 0)))
-            _commands.Enqueue(new NewGameCommand(_demoData));
+        float totalBtns = btnWidth * 2 + 12f;
+        ImGui.SetCursorPosX((windowSize.X - totalBtns) * 0.5f);
+
+        if (state.IsSinglePlayer)
+        {
+            if (ImGui.Button("Nouvelle Partie", new Vector2(btnWidth, 0)))
+                _commands.Enqueue(new NewGameCommand(_demoData));
+            ImGui.SameLine(0, 12);
+        }
+
+        if (ImGui.Button("Menu Principal", new Vector2(btnWidth, 0)))
+            _commands.Enqueue(new ReturnToMenuCommand());
 
         ImGui.End();
     }

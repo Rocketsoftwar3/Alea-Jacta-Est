@@ -27,6 +27,8 @@
         <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*"/>
         <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*"/>
         <PackageReference Include="ImGui.NET" Version="1.91.6.1"/>
+        <PackageReference Include="LiteNetLib" Version="1.2.*"/>
+        <PackageReference Include="MessagePack" Version="3.1.*"/>
     </ItemGroup>
     <ItemGroup>
         <FrameworkReference Include="Microsoft.WindowsDesktop.App" />
@@ -37,5 +39,10 @@
       <Folder Include="Content\cards\sword\" />
       <Folder Include="src\main\" />
       <Folder Include="src\services\" />
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="Content\defaultname.txt">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 </Project>

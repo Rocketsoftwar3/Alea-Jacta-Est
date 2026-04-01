@@ -51,6 +51,8 @@ public class ArcanaCard : Card
             _effect = effect;
         }
 
+        public int ArcanaNumber => _arcanaNumber;
+
         public ArcanaCardBuilder TextureRecto(string path) { _rectoPath = path; return this; }
         public ArcanaCardBuilder TextureVerso(string path) { _versoPath = path; return this; }
         public ArcanaCardBuilder Upright(bool upright) { _isUpright = upright; return this; }

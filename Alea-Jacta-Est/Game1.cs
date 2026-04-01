@@ -3,6 +3,7 @@ using Alea_Jacta_Est.Effects;
 using Alea_Jacta_Est.Events;
 using Alea_Jacta_Est.ImGuiBackend;
 using Alea_Jacta_Est.Main;
+using Alea_Jacta_Est.Networking;
 using Alea_Jacta_Est.Rendering;
 using Alea_Jacta_Est.Services;
 using Microsoft.Xna.Framework;
@@ -22,12 +23,25 @@ public class Game1 : Game
     private EventBus _eventBus;
     private CommandQueue _commands;
 
-    // Services
+    // Gameplay services
     private GameRenderer _gameRenderer;
     private ImGuiOverlayService _overlay;
     private EffectManager _effectManager;
     private TurnService _turnService;
     private DamageCalculationService _damageCalc;
+    private CardFactory _cardFactory;
+    private DemoDataService _demoData;
+
+    // Network / lobby
+    private NetworkManager _network;
+    private LanDiscovery _lan;
+    private LobbyManager _lobby;
+    private NetworkCommandQueue _netCommandQueue;
+    private HostGameController? _hostController;
+    private ClientGameController? _clientController;
+    private MainMenuService _mainMenu;
+    private LobbyScreenService _lobbyScreen;
+    private NetworkErrorOverlay _netErrorOverlay;
 
     private bool _isResizing;
 
@@ -72,15 +86,16 @@ public class Game1 : Game
 
     protected override void LoadContent()
     {
-        var spriteBatch      = new SpriteBatch(GraphicsDevice);
-        var backgroundTex    = Content.Load<Texture2D>("main_background");
-        var bgLayer0         = Content.Load<Texture2D>("background/background_layer0");
-        var bgLayer1         = Content.Load<Texture2D>("background/background_layer1");
-        var cardRectoTex     = Content.Load<Texture2D>("card_recto_placeholder");
-        var cardVersoTex     = Content.Load<Texture2D>("cards/tarot_dos");
-        var goldCoinTex      = Content.Load<Texture2D>("goldcoin");
+        var spriteBatch   = new SpriteBatch(GraphicsDevice);
+        var backgroundTex = Content.Load<Texture2D>("main_background");
+        var bgLayer0      = Content.Load<Texture2D>("background/background_layer0");
+        var bgLayer1      = Content.Load<Texture2D>("background/background_layer1");
+        var cardRectoTex  = Content.Load<Texture2D>("card_recto_placeholder");
+        var cardVersoTex  = Content.Load<Texture2D>("cards/tarot_dos");
+        var goldCoinTex   = Content.Load<Texture2D>("goldcoin");
 
-        _state    = new GameState("LocalPlayer");
+        // Game state starts in WaitingForPlayers — main menu drives initialization
+        _state    = new GameState("Joueur");
         _gfx      = new GraphicsResources(spriteBatch, GraphicsDevice, Content, backgroundTex, bgLayer0, bgLayer1, cardRectoTex, cardVersoTex, goldCoinTex);
         _eventBus = new EventBus();
         _commands = new CommandQueue();
@@ -90,21 +105,29 @@ public class Game1 : Game
         _damageCalc    = new DamageCalculationService();
         _turnService   = new TurnService(_effectManager, _damageCalc, _eventBus);
 
-        // Trigger background shake on player actions
         _eventBus.Subscribe<Events.CardPlacedOnBoard>(_ => _gameRenderer.TriggerShake());
         _eventBus.Subscribe<Events.CardPlayed>(_ => _gameRenderer.TriggerShake());
         _eventBus.Subscribe<Events.TurnValidated>(_ => _gameRenderer.TriggerShake());
 
-        var cardFactory   = new CardFactory(_gfx);
-        var demoData      = new DemoDataService(cardFactory, _gfx);
-        var marketWindow  = new MarketWindowService(_commands);
-        var victoryScreen = new VictoryScreenService(_commands, demoData);
-        var gameTable     = new GameTableService(_commands, _effectManager, _damageCalc);
+        _cardFactory  = new CardFactory(_gfx);
+        _demoData     = new DemoDataService(_cardFactory, _gfx);
 
-        _overlay = new ImGuiOverlayService(gameTable, marketWindow, victoryScreen);
+        // Network / lobby (created before services so _netCommandQueue can be passed)
+        _network         = new NetworkManager();
+        _lan             = new LanDiscovery();
+        _lobby           = new LobbyManager(_network, _lan);
+        _netCommandQueue = new NetworkCommandQueue(_commands, _network);
 
-        demoData.InitializeDemoDecks(_state);
-        _state.StartGame();
+        var marketWindow  = new MarketWindowService(_netCommandQueue);
+        var victoryScreen = new VictoryScreenService(_netCommandQueue, _demoData);
+        var gameTable     = new GameTableService(_netCommandQueue, _effectManager, _damageCalc);
+        _overlay          = new ImGuiOverlayService(gameTable, marketWindow, victoryScreen);
+
+        _mainMenu        = new MainMenuService(_lobby, _lan, _netCommandQueue, _demoData);
+        _lobbyScreen     = new LobbyScreenService(_lobby, _network);
+        _netErrorOverlay = new NetworkErrorOverlay(_netCommandQueue, _eventBus);
+
+        _eventBus.Subscribe<Events.ReturnedToMenu>(_ => OnReturnedToMenu());
     }
 
     protected override void Update(GameTime gameTime)
@@ -114,25 +137,115 @@ public class Game1 : Game
         if (_inputService.IsExitRequested())
             Exit();
 
-        _commands.ExecuteAll(_state, _eventBus);
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        if (_state.Phase == Main.GamePhase.InProgress)
+        // ── Lobby / network update ────────────────────────────────────────────
+        if (_state.Phase == GamePhase.WaitingForPlayers)
         {
-            switch (_state.CurrentTurnPhase)
+            _lobby.Update(dt); // includes _network.PollEvents() + LAN discovery
+
+            if (_lobby.IsGameReady)
+                StartMultiplayerGame();
+        }
+        else if (_hostController != null || _clientController != null)
+        {
+            // Lobby.Update() is no longer called in-game, but we still need to pump
+            // the network so clients receive GameStateSync packets.
+            _network.PollEvents();
+        }
+
+        // ── Command execution ─────────────────────────────────────────────────
+        int executedCount = _commands.ExecuteAll(_state, _eventBus);
+
+        // ── Host: broadcast snapshot after processing commands ────────────────
+        // ConsumePendingBroadcast() catches commands that arrived FROM clients.
+        // executedCount > 0 catches commands the HOST itself enqueued (e.g. validate own turn).
+        if (_hostController != null && _state.Phase == GamePhase.InProgress)
+        {
+            bool fromClient = _hostController.ConsumePendingBroadcast();
+            if (fromClient || executedCount > 0)
+                _hostController.BroadcastSnapshot();
+        }
+
+        // ── Host: tick for auto-validate + shop advancement ───────────────────
+        _hostController?.Update(dt);
+
+        // ── Turn phases (host runs these; clients receive them via snapshots) ──
+        if (_state.Phase == GamePhase.InProgress)
+        {
+            bool runPhases = _state.IsSinglePlayer || _hostController != null;
+            if (runPhases)
             {
-                case Main.TurnPhase.DrawPhase:
-                    _turnService.ExecuteDrawPhase(_state);
-                    break;
-                case Main.TurnPhase.ResolutionPhase:
-                    _turnService.ExecuteResolutionPhase(_state);
-                    break;
-                case Main.TurnPhase.CleanupPhase:
-                    _turnService.ExecuteCleanupPhase(_state);
-                    break;
+                switch (_state.CurrentTurnPhase)
+                {
+                    case TurnPhase.DrawPhase:
+                        _turnService.ExecuteDrawPhase(_state);
+                        if (!_state.IsSinglePlayer)
+                            _hostController!.BroadcastSnapshot();
+                        break;
+                    case TurnPhase.ResolutionPhase:
+                        _turnService.ExecuteResolutionPhase(_state);
+                        if (!_state.IsSinglePlayer)
+                            _hostController!.BroadcastSnapshot();
+                        break;
+                    case TurnPhase.CleanupPhase:
+                        _turnService.ExecuteCleanupPhase(_state);
+                        if (!_state.IsSinglePlayer)
+                            _hostController!.BroadcastSnapshot();
+                        break;
+                }
             }
         }
 
         base.Update(gameTime);
+    }
+
+    private void OnReturnedToMenu()
+    {
+        _network.Disconnect();
+        _lobby.LeaveLobby();
+        _hostController   = null;
+        _clientController = null;
+        _netCommandQueue.IsClient = false;
+        _netCommandQueue.State    = _state;
+
+        // Rebuild a fresh GameState with just the local player
+        _state = new GameState("Joueur");
+        _netCommandQueue.State = _state;
+    }
+
+    private void StartMultiplayerGame()
+    {
+        _state = _lobby.BuildGameState();
+        _netCommandQueue.State = _state;
+
+        var deckService = new MultiplayerDeckService(_cardFactory, _gfx);
+        deckService.InitializeDecks(_state, _lobby.GameSeed);
+        _state.StartGame();
+
+        if (_network.IsHost)
+        {
+            _netCommandQueue.IsClient = false;
+            _hostController = new HostGameController(
+                _network, _commands, _state, _eventBus, _effectManager, _cardFactory, _gfx);
+
+            // Register peer → player index mappings.
+            // LobbyManager.Players are ordered by PlayerId; host is index 0, clients follow.
+            int playerIdx = 1;
+            foreach (int peerId in _network.ConnectedPeerIds)
+                _hostController.RegisterPeer(peerId, playerIdx++);
+        }
+        else
+        {
+            _netCommandQueue.IsClient = true;
+            _clientController = new ClientGameController(
+                _network, _state, _eventBus, _cardFactory, _gfx);
+
+            // Ask the host for its current snapshot so we don't miss the initial DrawPhase.
+            _network.SendToHost(new byte[] { NetMsgType.RequestSync });
+        }
+
+        _eventBus.Publish(new Events.TurnPhaseChanged(_state.CurrentTurnPhase));
     }
 
     protected override void Draw(GameTime gameTime)
@@ -140,7 +253,21 @@ public class Game1 : Game
         _gameRenderer.Render(_state, gameTime);
 
         _imGuiRenderer.BeforeLayout(gameTime);
-        _overlay.Render(_state, _gfx, _imGuiRenderer);
+
+        if (_state.Phase == GamePhase.WaitingForPlayers)
+        {
+            // Show main menu or lobby screen
+            if (_lobby.State == LobbyState.Disconnected)
+                _mainMenu.Render(_state);
+            else
+                _lobbyScreen.Render(_state);
+        }
+        else
+        {
+            _overlay.Render(_state, _gfx, _imGuiRenderer);
+            _netErrorOverlay.Render(_state);
+        }
+
         _imGuiRenderer.AfterLayout();
 
         base.Draw(gameTime);

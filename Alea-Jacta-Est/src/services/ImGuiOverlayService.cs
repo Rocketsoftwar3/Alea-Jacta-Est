@@ -7,8 +7,8 @@ public class ImGuiOverlayService
 {
     private bool _marketOpen;
 
-    private readonly GameTableService    _gameTable;
-    private readonly MarketWindowService _marketWindow;
+    private readonly GameTableService     _gameTable;
+    private readonly MarketWindowService  _marketWindow;
     private readonly VictoryScreenService _victoryScreen;
 
     public ImGuiOverlayService(

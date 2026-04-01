@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Alea_Jacta_Est.Entities;
@@ -12,6 +13,7 @@ public class CardFactory
 {
     private static readonly Random _random = new();
     private static readonly MethodInfo[] _creatorMethods;
+    private static readonly Dictionary<int, MethodInfo> _arcanaByNumber;
 
     private readonly GraphicsResources _gfx;
 
@@ -24,6 +26,13 @@ public class CardFactory
 
         if (_creatorMethods.Length == 0)
             throw new InvalidOperationException("No [CardCreator] methods found.");
+
+        _arcanaByNumber = new Dictionary<int, MethodInfo>();
+        foreach (var m in _creatorMethods)
+        {
+            var b = (ArcanaCard.ArcanaCardBuilder)m.Invoke(null, new object[] { true })!;
+            _arcanaByNumber[b.ArcanaNumber] = m;
+        }
     }
 
     public CardFactory(GraphicsResources gfx)
@@ -136,6 +145,15 @@ public class CardFactory
     public ArcanaCard BuildRandom(bool isUpright = true)
     {
         return CreateRandomArcanaBuilder(isUpright).Build(_gfx);
+    }
+
+    /// <summary>Builds an arcana card by its arcana number (1-based). Used for network deserialization.</summary>
+    public ArcanaCard BuildArcanaByNumber(int arcanaNumber, bool isUpright)
+    {
+        if (!_arcanaByNumber.TryGetValue(arcanaNumber, out var method))
+            throw new ArgumentOutOfRangeException(nameof(arcanaNumber), $"No arcana with number {arcanaNumber}");
+        var builder = (ArcanaCard.ArcanaCardBuilder)method.Invoke(null, new object[] { isUpright })!;
+        return builder.Build(_gfx);
     }
 
     /// <summary>Returns the content path for a suit-specific recto texture, or null to use the placeholder.</summary>

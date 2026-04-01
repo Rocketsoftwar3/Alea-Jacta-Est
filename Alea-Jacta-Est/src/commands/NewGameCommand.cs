@@ -37,6 +37,7 @@ public record NewGameCommand(DemoDataService DemoData) : IGameCommand
         while (state.Players.Count > 1)
             state.Players.RemoveAt(state.Players.Count - 1);
 
+        state.IsSinglePlayer = true;
         DemoData.InitializeDemoDecks(state);
         state.StartGame();
 

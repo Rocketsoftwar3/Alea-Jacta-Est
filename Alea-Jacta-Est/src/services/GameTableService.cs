@@ -29,14 +29,14 @@ public class GameTableService
     private const float FanMaxSpread = 70f;   // degrees
     private const float FanH         = 220f;  // reserved height for the hand fan
 
-    private readonly CommandQueue             _commands;
+    private readonly ICommandQueue            _commands;
     private readonly EffectManager            _effectManager;
     private readonly DamageCalculationService _damageCalc;
 
     private TurnPhase _lastPhase   = TurnPhase.DrawPhase;
     private nint      _goldCoinId  = IntPtr.Zero;
 
-    public GameTableService(CommandQueue commands, EffectManager effectManager, DamageCalculationService damageCalc)
+    public GameTableService(ICommandQueue commands, EffectManager effectManager, DamageCalculationService damageCalc)
     {
         _commands      = commands;
         _effectManager = effectManager;
@@ -193,14 +193,17 @@ public class GameTableService
             if (opp.Decks.TryGetValue("MainDeck", out var md) && md.Cards.Count > 0)
                 RenderOppFan(opp, md, r, slotW);
 
-            // ── Board cards ──────────────────────────────────────────
+            // ── Board cards (face up so everyone can see what was played) ───
             if (opp.Decks.TryGetValue("BoardDeck0", out var brd) && brd.Cards.Count > 0)
             {
                 ImGui.Spacing();
-                ImGui.TextDisabled("Plateau:");
+                int oppIdx = state.Players.IndexOf(opp);
+                bool oppValidated = state.TurnStates.TryGetValue(oppIdx, out var ots) && ots.HasValidated;
+                string boardLabel = oppValidated ? $"Plateau ({brd.Cards.Count}) [ok]" : $"Plateau ({brd.Cards.Count})";
+                ImGui.TextDisabled(boardLabel);
                 foreach (var c in brd.Cards)
                 {
-                    ImGui.Image(r.GetOrBindTexture(c.TextureVerso), CardOppBrd);
+                    ImGui.Image(r.GetOrBindTexture(c.TextureRecto), CardOppBrd);
                     ImGui.SameLine(0, 2);
                 }
             }
@@ -327,7 +330,8 @@ public class GameTableService
 
     private void RenderLocal(GameState state, Player player, ImGuiRenderer r, float w, float h, ref bool marketOpen)
     {
-        bool isPlayPhase = state.CurrentTurnPhase == TurnPhase.PlayPhase;
+        bool isMyTurn    = state.IsLocalPlayerTurn;
+        bool isPlayPhase = state.CurrentTurnPhase == TurnPhase.PlayPhase && isMyTurn;
         bool isShopPhase = state.CurrentTurnPhase == TurnPhase.ShopPhase;
         int  localIdx    = state.Players.IndexOf(player);
         bool alreadyVal  = state.TurnStates.TryGetValue(localIdx, out var ts) && ts.HasValidated;
@@ -336,6 +340,16 @@ public class GameTableService
         ImGui.BeginChild("##local", new Vector2(w, h), ImGuiChildFlags.Borders);
 
         // ── Stats (name + HP bar, no gold — gold is in banner) ───────
+        // "Waiting" overlay when it's not the local player's turn
+        if (!state.IsSinglePlayer && state.CurrentTurnPhase == TurnPhase.PlayPhase && !isMyTurn)
+        {
+            var cur = state.CurrentPlayer;
+            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.55f, 0.55f, 0.55f, 1f));
+            ImGui.TextUnformatted($"En attente — tour de {cur?.Name ?? "?"}");
+            ImGui.PopStyleColor();
+            ImGui.Separator();
+        }
+
         ImGui.TextColored(new Vector4(0.4f, 0.9f, 1f, 1f), player.Name);
         ImGui.SameLine(0, 12);
         float f = Math.Clamp(player.Health / 100f, 0f, 1f);
@@ -394,7 +408,7 @@ public class GameTableService
         ImGui.PushStyleColor(ImGuiCol.ButtonActive,  btnColorActive);
         if (ImGui.Button(actionLabel, new Vector2(160, 30)))
         {
-            if (isShopPhase) _commands.Enqueue(new EndShopPhaseCommand());
+            if (isShopPhase) _commands.Enqueue(new EndShopPhaseCommand(localIdx));
             else             _commands.Enqueue(new ValidateTurnCommand(localIdx));
         }
         ImGui.PopStyleColor(3);
