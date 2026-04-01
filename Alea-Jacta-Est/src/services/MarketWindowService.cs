@@ -36,11 +36,13 @@ public class MarketWindowService
         var player = state.LocalPlayer;
         var market = player.Market;
 
-        // Fullscreen modal
+        // Fullscreen modal with padding
         var io = ImGui.GetIO();
-        ImGui.SetNextWindowSize(io.DisplaySize, ImGuiCond.Always);
-        ImGui.SetNextWindowPos(Vector2.Zero, ImGuiCond.Always);
-        ImGui.SetNextWindowBgAlpha(0.92f);
+        const float modalPad = 40f;
+        var modalSize = new Vector2(io.DisplaySize.X - modalPad * 2f, io.DisplaySize.Y - modalPad * 2f);
+        ImGui.SetNextWindowSize(modalSize, ImGuiCond.Always);
+        ImGui.SetNextWindowPos(new Vector2(modalPad, modalPad), ImGuiCond.Always);
+        ImGui.SetNextWindowBgAlpha(0.95f);
 
         var flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize
                   | ImGuiWindowFlags.NoMove     | ImGuiWindowFlags.NoCollapse;
@@ -49,7 +51,7 @@ public class MarketWindowService
 
         // Title bar with close button
         ImGui.TextColored(new Vector4(1f, 0.7f, 0.3f, 1f), "BOUTIQUE");
-        ImGui.SameLine(io.DisplaySize.X - 200f);
+        ImGui.SameLine(modalSize.X - 200f);
         int localIdx = state.Players.IndexOf(player);
         if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_close_shop", "Fermer et valider",
             new Vector2(180, 28), new Vector4(0.6f, 0.2f, 0.2f, 1f), false))

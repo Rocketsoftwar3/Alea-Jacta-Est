@@ -590,14 +590,14 @@ public class GameTableService
         // No nested children — use cursor positioning within ##local
         var layoutOrigin = ImGui.GetCursorScreenPos();
         float remainH = Math.Max(1f, h - (layoutOrigin.Y - ImGui.GetWindowPos().Y) - 4f);
-        const float arcColW = 80f;
+        const float arcColW = 110f;
         float centerX = layoutOrigin.X + arcColW + 6f;
         float centerW = Math.Max(1f, w - 12f - arcColW - 6f);
 
         // Left column: Arcana cards (single nested child — safe)
         ImGui.BeginChild("##arc_col", new Vector2(arcColW, remainH), ImGuiChildFlags.None,
             ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
-        RenderArcanaColumn(player, r, isPlayPhase, arcanaLimit, arcColW, remainH);
+        RenderArcanaGrid(player, r, isPlayPhase, arcanaLimit, arcColW, remainH);
         ImGui.EndChild();
 
         // ── Right area: Fan + Piles + Buttons (rendered via draw list) ──
@@ -703,12 +703,12 @@ public class GameTableService
     // Arcana column — vertical stack of arcana cards (left of fan)
     // ────────────────────────────────────────────────────────────────
 
-    private void RenderArcanaColumn(Player player, ImGuiRenderer r, bool isPlayPhase, bool arcanaLimit, float colW, float colH)
+    private void RenderArcanaGrid(Player player, ImGuiRenderer r, bool isPlayPhase, bool arcanaLimit, float colW, float colH)
     {
         if (!player.Decks.TryGetValue(DeckType.ArcanaHandDeck, out var arcanaHand))
             return;
 
-        ImGui.TextColored(new Vector4(0.85f, 0.55f, 1f, 1f), "Arc.");
+        ImGui.TextColored(new Vector4(0.85f, 0.55f, 1f, 1f), "Arcanes");
 
         if (arcanaHand.Cards.Count == 0)
         {
@@ -719,43 +719,55 @@ public class GameTableService
         bool canActivate = isPlayPhase && !arcanaLimit;
         var dl = ImGui.GetWindowDrawList();
 
-        // Adaptive card size to fit vertically
-        float cardW = Math.Min(colW - 4f, 52f);
-        float cardH = cardW * (93f / 56f); // maintain aspect ratio
-        const float spacing = 4f;
-        int n = arcanaHand.Cards.Count;
-
         float headerH = ImGui.GetCursorPosY();
         float availH = colH - headerH;
-        float totalH = n * (cardH + spacing);
-        if (totalH > availH && n > 0)
+        int n = arcanaHand.Cards.Count;
+        const float spacing = 4f;
+
+        // Grid: compute how many columns fit
+        float maxCardW = 48f;
+        float maxCardH = maxCardW * (93f / 56f);
+        int cols = Math.Max(1, (int)((colW + spacing) / (maxCardW + spacing)));
+        int rows = (n + cols - 1) / cols;
+
+        // Shrink cards if they don't fit vertically
+        float cardW = maxCardW;
+        float cardH = maxCardH;
+        float totalH = rows * (cardH + spacing);
+        if (totalH > availH && rows > 0)
         {
-            cardH = Math.Max(28f, (availH - n * spacing) / n);
+            cardH = Math.Max(24f, (availH - rows * spacing) / rows);
             cardW = cardH * (56f / 93f);
         }
+
+        var cardSize = new Vector2(cardW, cardH);
 
         for (int i = 0; i < arcanaHand.Cards.Count; i++)
         {
             var card = arcanaHand.Cards[i];
             if (card is not ArcanaCard ac) continue;
 
-            float x = (colW - cardW) * 0.5f;
-            ImGui.SetCursorPosX(x);
+            int col = i % cols;
+            int row = i / cols;
+            float x = spacing + col * (cardW + spacing);
+            float y = headerH + row * (cardH + spacing);
+
+            ImGui.SetCursorPos(new Vector2(x, y));
             ImGui.PushID(i);
-            bool pressed = ImGui.InvisibleButton("ac", new Vector2(cardW, cardH));
+            bool pressed = ImGui.InvisibleButton("ac", cardSize);
             ImGui.PopID();
 
             Vector2 tl = ImGui.GetItemRectMin();
-            Vector2 center = tl + new Vector2(cardW, cardH) * 0.5f;
+            Vector2 center = tl + cardSize * 0.5f;
             var texId = r.GetOrBindTexture(card.TextureRecto);
-            DrawFanCard(dl, texId, center, 0f, new Vector2(cardW, cardH));
+            DrawFanCard(dl, texId, center, 0f, cardSize);
 
             bool hovered = ImGui.IsItemHovered();
             if (hovered)
             {
                 float time = (float)ImGui.GetTime();
                 float glow = 0.7f + 0.3f * MathF.Sin(time * 4f);
-                dl.AddRect(tl - new Vector2(1, 1), tl + new Vector2(cardW + 1, cardH + 1),
+                dl.AddRect(tl - new Vector2(1, 1), tl + cardSize + new Vector2(1, 1),
                     ImGui.ColorConvertFloat4ToU32(new Vector4(0.85f, 0.55f, 1f, canActivate ? glow : 0.35f)),
                     3f, ImDrawFlags.None, 2f);
                 CardTooltip(r, card);
