@@ -36,6 +36,7 @@ public class Game1 : Game
     private CardFactory _cardFactory;
     private DemoDataService _demoData;
     private GameLogService _gameLog;
+    private float _spTurnTimer = -1f;
 
     // Network / lobby
     private NetworkManager _network;
@@ -250,6 +251,27 @@ public class Game1 : Game
         // ── Turn phases (host runs these; clients receive them via snapshots) ──
         if (_state.Phase == GamePhase.InProgress)
         {
+            // Single-player turn timer (2 minutes)
+            if (_state.IsSinglePlayer && _state.CurrentTurnPhase == TurnPhase.PlayPhase)
+            {
+                if (_spTurnTimer < 0f)
+                    _spTurnTimer = 120f; // 2 minutes
+                _spTurnTimer -= dt;
+                _state.ValidateSecondsRemaining = System.Math.Max(0f, _spTurnTimer);
+                if (_spTurnTimer <= 0f)
+                {
+                    // Auto-validate
+                    int idx = _state.Players.IndexOf(_state.LocalPlayer);
+                    _commands.Enqueue(new Commands.ValidateTurnCommand(idx));
+                    _spTurnTimer = -1f;
+                }
+            }
+            else if (_state.IsSinglePlayer && _state.CurrentTurnPhase != TurnPhase.PlayPhase)
+            {
+                _spTurnTimer = -1f;
+                _state.ValidateSecondsRemaining = 0f;
+            }
+
             bool runPhases = _state.IsSinglePlayer || _hostController != null;
             if (runPhases)
             {
@@ -257,13 +279,8 @@ public class Game1 : Game
                 {
                     case TurnPhase.DrawPhase:
                         _turnService.ExecuteDrawPhase(_state);
-                        // After setup, check if local player finished clicking draws
-                        if (_turnService.IsDrawPhaseComplete(_state))
-                        {
-                            _turnService.FinishDrawPhase(_state);
-                            if (!_state.IsSinglePlayer)
-                                _hostController!.BroadcastSnapshot();
-                        }
+                        if (!_state.IsSinglePlayer)
+                            _hostController!.BroadcastSnapshot();
                         break;
                     case TurnPhase.ResolutionPhase:
                         _turnService.ExecuteResolutionPhase(_state);

@@ -24,7 +24,7 @@ public class HostGameController
     private readonly GraphicsResources _gfx;
 
     // Auto-validate: if not all players validated within this window, host forces resolution.
-    private const float AutoValidateSeconds = 60f;
+    private const float AutoValidateSeconds = 120f;
     private float _validateTimer;
     private bool  _timerRunning;
     private int   _lastKnownPlayerIndex = -1; // detect CurrentPlayerIndex changes to reset timer

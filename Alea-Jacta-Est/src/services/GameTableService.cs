@@ -55,9 +55,6 @@ public class GameTableService
         if (_goldCoinId == IntPtr.Zero)
             _goldCoinId = r.GetOrBindTexture(gfx.GoldCoin);
 
-        // Auto-open market when ShopPhase begins
-        if (state.CurrentTurnPhase == TurnPhase.ShopPhase && _lastPhase != TurnPhase.ShopPhase)
-            marketOpen = true;
         _lastPhase = state.CurrentTurnPhase;
 
         var io = ImGui.GetIO();
@@ -109,40 +106,49 @@ public class GameTableService
     }
 
     // ────────────────────────────────────────────────────────────────
-    // Game log panel
+    // Game log panel — fixed corner overlay (not a floating window)
     // ────────────────────────────────────────────────────────────────
-
-    private bool _logOpen = true;
 
     private void RenderGameLog(float W, float H)
     {
-        const float logW = 280f;
-        const float logH = 160f;
-        const float margin = 8f;
+        const float logW = 260f;
+        const float logH = 140f;
+        const float margin = 6f;
 
-        ImGui.SetNextWindowPos(new Vector2(margin, H - logH - margin), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSize(new Vector2(logW, logH), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowBgAlpha(0.75f);
-        ImGui.SetNextWindowSizeConstraints(new Vector2(200, 100), new Vector2(500, 400));
+        // Fixed position, no title bar, no move, no resize
+        ImGui.SetNextWindowPos(new Vector2(margin, H - logH - margin), ImGuiCond.Always);
+        ImGui.SetNextWindowSize(new Vector2(logW, logH), ImGuiCond.Always);
+        ImGui.SetNextWindowBgAlpha(0.6f);
 
-        var flags = ImGuiWindowFlags.NoFocusOnAppearing;
-        if (!ImGui.Begin("Actu", ref _logOpen, flags))
-        {
-            ImGui.End();
-            return;
-        }
+        var flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove
+                  | ImGuiWindowFlags.NoResize   | ImGuiWindowFlags.NoFocusOnAppearing
+                  | ImGuiWindowFlags.NoNav      | ImGuiWindowFlags.NoBringToFrontOnFocus;
+
+        ImGui.Begin("##gamelog", flags);
+
+        ImGui.TextColored(new Vector4(0.7f, 0.7f, 0.7f, 0.8f), "Actu");
+        ImGui.Separator();
+
+        // Scrollable log entries
+        float contentH = ImGui.GetContentRegionAvail().Y;
+        ImGui.BeginChild("##logscroll", new Vector2(0, contentH), ImGuiChildFlags.None);
 
         var entries = _gameLog.Entries;
-        for (int i = 0; i < entries.Count; i++)
+        // Show only last entries that fit
+        int startIdx = Math.Max(0, entries.Count - 20);
+        for (int i = startIdx; i < entries.Count; i++)
         {
             var e = entries[i];
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + logW - 16f);
             ImGui.TextColored(e.Color, e.Message);
+            ImGui.PopTextWrapPos();
         }
 
-        // Auto-scroll to bottom if near bottom
-        if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY() - 20f)
+        // Auto-scroll
+        if (ImGui.GetScrollY() >= ImGui.GetScrollMaxY() - 10f)
             ImGui.SetScrollHereY(1.0f);
 
+        ImGui.EndChild();
         ImGui.End();
     }
 
@@ -191,8 +197,26 @@ public class GameTableService
         ImGui.SameLine(0, 4);
         ImGui.TextColored(new Vector4(1f, 0.85f, 0.2f, 1f), walletStr);
 
+        // ── Timer display ─────────────────────────────────────────────
+        if (state.ValidateSecondsRemaining > 0f && state.CurrentTurnPhase == TurnPhase.PlayPhase)
+        {
+            int totalSecs = (int)MathF.Ceiling(state.ValidateSecondsRemaining);
+            int mins = totalSecs / 60;
+            int secs = totalSecs % 60;
+            string timerStr = $"{mins}:{secs:D2}";
+            Vector4 timerCol = totalSecs <= 30
+                ? new Vector4(1f, 0.3f, 0.2f, 1f)
+                : totalSecs <= 60
+                    ? new Vector4(1f, 0.7f, 0.2f, 1f)
+                    : new Vector4(0.8f, 0.8f, 0.8f, 1f);
+            float timerW = ImGui.CalcTextSize(timerStr).X;
+            float timerX = W * 0.5f - timerW * 0.5f;
+            ImGui.SetCursorPos(new Vector2(timerX, 7f));
+            ImGui.TextColored(timerCol, timerStr);
+        }
+
         // ── Mute Button (Pixel Art Speaker) ──────────────────────────
-        float muteX = W - 32f - 8f; 
+        float muteX = W - 32f - 8f;
         Alea_Jacta_Est.Utils.UIHelper.DrawMuteButton(new Vector2(muteX, 4f));
     }
 
@@ -578,7 +602,7 @@ public class GameTableService
 
         // Deck piles on the right, same vertical origin
         ImGui.SetCursorScreenPos(new Vector2(rowOriginFan.X + fanW + 6f, rowOriginFan.Y));
-        RenderDeckPiles(state, player, r, pilesW);
+        RenderDeckPiles(player, r, pilesW);
 
         // Advance cursor past whichever is taller
         float pileRowH = CardPile.Y + 14f + 4f;
@@ -589,47 +613,69 @@ public class GameTableService
         RenderArcanaStrip(player, r, isPlayPhase, arcanaLimit, w - 12f);
 
 
-        // ── Buttons: centered action + side buttons ─────────────────
-        bool isActionPhase = (isPlayPhase && !alreadyVal) || isShopPhase;
-        string actionLabel = isShopPhase ? "Fin de boutique" : ">> Valider le tour <<";
-        Vector4 btnColor = isShopPhase ? new Vector4(0.60f, 0.35f, 0.08f, 1f) : new Vector4(0.85f, 0.65f, 0.1f, 1f);
-        string boutiqueLabel = marketOpen ? "Fermer" : "Boutique";
+        // ── Action buttons ───────────────────────────────────────────
         bool targeting = state.PendingActivation != null;
+        bool hasSelected = ts != null && ts.SelectedCards.Count > 0;
+        bool canDiscard = ts != null && ts.DiscardsRemaining > 0 && !ts.HasPlayed;
+        bool hasPlayed = ts != null && ts.HasPlayed;
 
         const float btnH = 30f;
-        const float sideBtnW = 100f;
         const float gap = 4f;
         float availW = ImGui.GetContentRegionAvail().X;
         var rowOrigin = ImGui.GetCursorPos();
 
-        // Left: shop button
-        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_shop", boutiqueLabel, new Vector2(sideBtnW, btnH), new Vector4(0.2f, 0.3f, 0.6f, 1f), false))
-            marketOpen = !marketOpen;
+        if (isPlayPhase && !alreadyVal && !hasPlayed)
+        {
+            // Play/Discard buttons when cards are selected
+            float btnW = 140f;
+            float totalBtnsW = btnW * 2 + gap;
+            float startX = rowOrigin.X + (availW - totalBtnsW) * 0.5f;
 
-        // Center: main action button (wider, centered, gold/visible)
-        float actionBtnW = MathF.Min(300f, availW * 0.45f);
-        float actionBtnX = rowOrigin.X + (availW - actionBtnW) * 0.5f;
-        ImGui.SetCursorPos(new Vector2(actionBtnX, rowOrigin.Y));
-        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_action", actionLabel, new Vector2(actionBtnW, btnH), btnColor, !isActionPhase))
-        {
-            if (isShopPhase) _commands.Enqueue(new EndShopPhaseCommand(localIdx));
-            else             _commands.Enqueue(new ValidateTurnCommand(localIdx));
+            // Discard button (left)
+            ImGui.SetCursorPos(new Vector2(startX, rowOrigin.Y));
+            string discardLabel = $"Defausser ({ts!.DiscardsRemaining})";
+            bool discardDisabled = !hasSelected || !canDiscard;
+            if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_discard", discardLabel, new Vector2(btnW, btnH),
+                new Vector4(0.6f, 0.3f, 0.1f, 1f), discardDisabled))
+            {
+                _commands.Enqueue(new DiscardCardsCommand(player, new List<Entities.Card>(ts.SelectedCards)));
+            }
+
+            // Play button (right)
+            ImGui.SetCursorPos(new Vector2(startX + btnW + gap, rowOrigin.Y));
+            if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_play", ">> Jouer <<", new Vector2(btnW, btnH),
+                new Vector4(0.85f, 0.65f, 0.1f, 1f), !hasSelected))
+            {
+                _commands.Enqueue(new PlaySelectedCardsCommand(player));
+                _commands.Enqueue(new ValidateTurnCommand(localIdx));
+            }
+
+            // Pulsing border on play button when cards are selected
+            if (hasSelected)
+            {
+                float time = (float)ImGui.GetTime();
+                float pulse = 0.5f + 0.5f * MathF.Sin(time * 3f);
+                var btnScreenPos = ImGui.GetWindowPos() + new Vector2(startX + btnW + gap, rowOrigin.Y);
+                var btnBR = btnScreenPos + new Vector2(btnW, btnH);
+                uint borderCol = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.9f, 0.3f, pulse));
+                ImGui.GetWindowDrawList().AddRect(btnScreenPos, btnBR, borderCol, 4f, ImDrawFlags.None, 2f);
+            }
         }
-        // Pulsing border when action is available
-        if (isActionPhase)
+        else if (isShopPhase)
         {
-            float time = (float)ImGui.GetTime();
-            float pulse = 0.5f + 0.5f * MathF.Sin(time * 3f);
-            var btnScreenPos = ImGui.GetWindowPos() + new Vector2(actionBtnX, rowOrigin.Y);
-            var btnBR = btnScreenPos + new Vector2(actionBtnW, btnH);
-            uint borderCol = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.9f, 0.3f, pulse));
-            ImGui.GetWindowDrawList().AddRect(btnScreenPos, btnBR, borderCol, 4f, ImDrawFlags.None, 2f);
+            // Shop phase handled by modal — no button needed here
+        }
+        else if (hasPlayed || alreadyVal)
+        {
+            float lblW = ImGui.CalcTextSize("Tour valide - en attente...").X;
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + (availW - lblW) * 0.5f);
+            ImGui.TextColored(new Vector4(0.5f, 0.8f, 0.5f, 1f), "Tour valide - en attente...");
         }
 
         if (targeting)
         {
             var pending = state.PendingActivation!;
-            float targetBtnW = sideBtnW;
+            float targetBtnW = 120f;
             float rightX = rowOrigin.X + availW - targetBtnW;
 
             ImGui.SetCursorPos(new Vector2(rightX, rowOrigin.Y));
@@ -753,7 +799,7 @@ public class GameTableService
     // Deck piles: ArcanaHandDeck (left) | MainDeck (center) | DiscardDeck (right)
     // ────────────────────────────────────────────────────────────────
 
-    private void RenderDeckPiles(GameState state, Player player, ImGuiRenderer r, float zoneW)
+    private void RenderDeckPiles(Player player, ImGuiRenderer r, float zoneW)
     {
         const float pileSpacing = 80f;
         const float labelH      = 14f;
@@ -764,17 +810,12 @@ public class GameTableService
 
         var dl       = ImGui.GetWindowDrawList();
         var mousePos = ImGui.GetIO().MousePos;
-        bool clicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
 
         float centerX = origin.X + zoneW * 0.5f;
         float cardY   = origin.Y + CardPile.Y * 0.5f;
 
-        bool isDrawPhase = state.CurrentTurnPhase == TurnPhase.DrawPhase;
-        int pidx = state.Players.IndexOf(player);
-        state.TurnStates.TryGetValue(pidx, out var drawTs);
-
         // Helper: draw one pile and its label
-        void DrawPile(DeckType deckKey, string label, float x, bool showFront, int drawsRemaining)
+        void DrawPile(DeckType deckKey, string label, float x, bool showFront)
         {
             if (!player.Decks.TryGetValue(deckKey, out var deck) || deck.Cards.Count == 0)
             {
@@ -805,49 +846,19 @@ public class GameTableService
                     ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 1f, 1f)), cnt);
             }
 
-            // Pulsing gold border + draw badge during DrawPhase
-            bool canDraw = isDrawPhase && drawsRemaining > 0;
-            if (canDraw)
-            {
-                float time = (float)ImGui.GetTime();
-                float pulse = 0.6f + 0.4f * MathF.Sin(time * 4f);
-                var tl2 = new Vector2(x - CardPile.X * 0.5f - 2f, cardY - CardPile.Y * 0.5f - 2f);
-                var br2 = new Vector2(x + CardPile.X * 0.5f + 2f, cardY + CardPile.Y * 0.5f + 2f);
-                dl.AddRect(tl2, br2,
-                    ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.85f, 0.2f, pulse)), 4f, ImDrawFlags.None, 2.5f);
-
-                // "Pioche! (X)" badge top-center
-                string drawBadge = $"Pioche! ({drawsRemaining})";
-                var badgeSize = ImGui.CalcTextSize(drawBadge);
-                var badgePos = new Vector2(x - badgeSize.X * 0.5f, cardY - CardPile.Y * 0.5f - badgeSize.Y - 4f);
-                dl.AddRectFilled(badgePos - new Vector2(3, 1), badgePos + badgeSize + new Vector2(3, 1),
-                    ImGui.ColorConvertFloat4ToU32(new Vector4(0.1f, 0.1f, 0.1f, 0.85f)), 3f);
-                dl.AddText(badgePos,
-                    ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.9f, 0.3f, 1f)), drawBadge);
-            }
-
             // Label below
             float lw2 = ImGui.CalcTextSize(label).X;
             dl.AddText(new Vector2(x - lw2 * 0.5f, cardY + CardPile.Y * 0.5f + 2f),
                 ImGui.ColorConvertFloat4ToU32(new Vector4(0.7f, 0.7f, 0.7f, 1f)), label);
 
-            // Hover + click
+            // Tooltip on hover
             if (IsMouseInRotatedRect(mousePos, center, CardPile.X, CardPile.Y, 0f))
-            {
                 CardTooltip(r, topCard);
-                if (clicked && canDraw)
-                {
-                    _commands.Enqueue(new DrawCardCommand(player, deckKey));
-                    clicked = false;
-                }
-            }
         }
 
-        int arcDraws = drawTs?.ArcanaDrawsRemaining ?? 0;
-        int valDraws = drawTs?.ValueDrawsRemaining ?? 0;
-        DrawPile(DeckType.SpecialDeck,  "Arc. Pioche", centerX - pileSpacing, false, arcDraws);
-        DrawPile(DeckType.MainDeck,     "Pioche",      centerX,               false, valDraws);
-        DrawPile(DeckType.DiscardDeck,  "Defausse",    centerX + pileSpacing, true,  0);
+        DrawPile(DeckType.SpecialDeck,  "Arc. Pioche", centerX - pileSpacing, false);
+        DrawPile(DeckType.MainDeck,     "Pioche",      centerX,               false);
+        DrawPile(DeckType.DiscardDeck,  "Defausse",    centerX + pileSpacing, true);
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -895,29 +906,65 @@ public class GameTableService
             positions[i] = (new Vector2(cx, cy), a);
         }
 
-        // Draw back→front
+        // Get selection state
+        var selected = state.TurnStates.TryGetValue(localIdx, out var selTs)
+            ? selTs.SelectedCards : new List<Entities.Card>();
+
+        // Draw back→front (selected cards are pushed up)
+        const float selectLift = 20f;
         for (int i = 0; i < n; i++)
         {
-            var tex = r.GetOrBindTexture(hand.Cards[i].TextureRecto);
-            DrawFanCard(dl, tex, positions[i].center, positions[i].angle, CardFan);
+            var card = hand.Cards[i];
+            bool isSel = selected.Contains(card);
+            var center = positions[i].center;
+            if (isSel)
+            {
+                float rot = positions[i].angle;
+                center = new Vector2(
+                    center.X - MathF.Sin(rot) * selectLift,
+                    center.Y - MathF.Cos(rot) * selectLift);
+            }
+            var tex = r.GetOrBindTexture(card.TextureRecto);
+            DrawFanCard(dl, tex, center, positions[i].angle, CardFan);
+
+            // Selection highlight border
+            if (isSel)
+            {
+                var (tl, tr, br, bl) = RotatedCorners(center, CardFan.X + 4, CardFan.Y + 4, positions[i].angle);
+                dl.AddQuad(tl, tr, br, bl,
+                    ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0.85f, 0.2f, 0.9f)), 2.5f);
+            }
         }
 
-        // Hover & click front→back
-        var toPlay = new List<ValueCard>();
+        // Hover & click front→back — toggle selection
         for (int i = n - 1; i >= 0; i--)
         {
-            if (!IsMouseInRotatedRect(mousePos, positions[i].center, CardFan.X, CardFan.Y, positions[i].angle))
+            var card = hand.Cards[i];
+            bool isSel = selected.Contains(card);
+            var center = positions[i].center;
+            if (isSel)
+            {
+                float rot = positions[i].angle;
+                center = new Vector2(
+                    center.X - MathF.Sin(rot) * selectLift,
+                    center.Y - MathF.Cos(rot) * selectLift);
+            }
+
+            if (!IsMouseInRotatedRect(mousePos, center, CardFan.X, CardFan.Y, positions[i].angle))
                 continue;
             bool md = state.TurnStates.TryGetValue(localIdx, out var mts) && mts.MultiplierDoubled;
-            CardTooltip(r, hand.Cards[i], md);
-            if (clicked && isPlayPhase && hand.Cards[i] is ValueCard vc)
+            CardTooltip(r, card, md);
+            if (clicked && isPlayPhase && card is ValueCard)
             {
-                toPlay.Add(vc);
+                // Toggle selection
+                if (isSel)
+                    selected.Remove(card);
+                else
+                    selected.Add(card);
                 clicked = false;
             }
             break;
         }
-        foreach (var vc in toPlay) _commands.Enqueue(new PlayCardCommand(player, vc));
     }
 
     // ────────────────────────────────────────────────────────────────

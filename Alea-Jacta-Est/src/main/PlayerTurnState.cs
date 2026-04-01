@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using Alea_Jacta_Est.Entities;
+
 namespace Alea_Jacta_Est.Main;
 
 /// <summary>Per-player state that resets each round.</summary>
@@ -70,12 +73,15 @@ public class PlayerTurnState
     /// <summary>Stored damage total to replay (set at end of current resolution).</summary>
     public int ReplicatedDamageTotal { get; set; }
 
-    // ── Draw Phase (click-to-draw) ─────────────────────────────────────────
-    /// <summary>Number of value cards the local player still needs to draw this turn.</summary>
-    public int ValueDrawsRemaining { get; set; }
+    // ── Card Selection & Discard ────────────────────────────────────────────
+    /// <summary>Cards currently selected by the player (push-up effect).</summary>
+    public List<Card> SelectedCards { get; set; } = new();
 
-    /// <summary>Number of arcana cards the local player still needs to draw this turn.</summary>
-    public int ArcanaDrawsRemaining { get; set; }
+    /// <summary>Number of discard turns remaining this round (starts at 2).</summary>
+    public int DiscardsRemaining { get; set; } = 2;
+
+    /// <summary>True once the player has played their cards this turn.</summary>
+    public bool HasPlayed { get; set; }
 
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -104,7 +110,8 @@ public class PlayerTurnState
         AmoureuxShopPending = false;
         ReplicatePreviousTurn = false;
         ReplicatedDamageTotal = 0;
-        ValueDrawsRemaining = 0;
-        ArcanaDrawsRemaining = 0;
+        SelectedCards.Clear();
+        DiscardsRemaining = 2;
+        HasPlayed = false;
     }
 }

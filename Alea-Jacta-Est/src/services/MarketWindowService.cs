@@ -23,27 +23,40 @@ public class MarketWindowService
 
     public void Render(GameState state, ImGuiRenderer imGuiRenderer, ref bool isOpen)
     {
-        if (!isOpen) return;
+        bool isShopPhase = state.CurrentTurnPhase == TurnPhase.ShopPhase;
+
+        // Only accessible during ShopPhase — auto-open and force modal
+        if (!isShopPhase)
+        {
+            isOpen = false;
+            return;
+        }
+        isOpen = true;
 
         var player = state.LocalPlayer;
         var market = player.Market;
 
-        ImGui.SetNextWindowSize(new Vector2(480, 520), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowPos(new Vector2(250, 120), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowSizeConstraints(new Vector2(300, 300), new Vector2(700, 800));
+        // Fullscreen modal
+        var io = ImGui.GetIO();
+        ImGui.SetNextWindowSize(io.DisplaySize, ImGuiCond.Always);
+        ImGui.SetNextWindowPos(Vector2.Zero, ImGuiCond.Always);
+        ImGui.SetNextWindowBgAlpha(0.92f);
 
-        if (!ImGui.Begin("Marché", ref isOpen))
+        var flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize
+                  | ImGuiWindowFlags.NoMove     | ImGuiWindowFlags.NoCollapse;
+
+        ImGui.Begin("##MarketModal", flags);
+
+        // Title bar with close button
+        ImGui.TextColored(new Vector4(1f, 0.7f, 0.3f, 1f), "BOUTIQUE");
+        ImGui.SameLine(io.DisplaySize.X - 200f);
+        int localIdx = state.Players.IndexOf(player);
+        if (Alea_Jacta_Est.Utils.UIHelper.DrawPixelButton("btn_close_shop", "Fermer et valider",
+            new Vector2(180, 28), new Vector4(0.6f, 0.2f, 0.2f, 1f), false))
         {
-            ImGui.End();
-            return;
+            _commands.Enqueue(new EndShopPhaseCommand(localIdx));
         }
-
-        // ── Phase indicator ───────────────────────────────────────────────────
-        bool isShopPhase = state.CurrentTurnPhase == TurnPhase.ShopPhase;
-        ImGui.TextColored(isShopPhase
-            ? new Vector4(1f, 0.7f, 0.3f, 1f)
-            : new Vector4(0.7f, 0.7f, 0.7f, 1f),
-            isShopPhase ? "Phase Boutique - Achats/Ventes disponibles" : "Hors boutique - Achat uniquement");
+        ImGui.Separator();
 
         // ── Header ────────────────────────────────────────────────────────────
         ImGui.TextUnformatted($"Portefeuille : {player.Wallet} pièces");
@@ -223,8 +236,8 @@ public class MarketWindowService
 
                 if (cardToSell != null && sellDeck != null)
                 {
-                    int localIdx = state.Players.IndexOf(player);
-                    _commands.Enqueue(new SellCardCommand(player, cardToSell, sellDeck, localIdx));
+                    int sellIdx = state.Players.IndexOf(player);
+                    _commands.Enqueue(new SellCardCommand(player, cardToSell, sellDeck, sellIdx));
                 }
 
                 ImGui.EndTable();
