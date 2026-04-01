@@ -793,6 +793,18 @@
 /processorParam:TextureFormat=Color
 /build:cards/cup/8Coupe.png
 
+#begin cards/cup/9Coupe.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=True
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:cards/cup/9Coupe.png
+
 #begin cards/cup/10Coupe.png
 /importer:TextureImporter
 /processor:TextureProcessor
