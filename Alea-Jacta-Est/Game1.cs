@@ -54,7 +54,7 @@ public class Game1 : Game
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
+        Content.RootDirectory = Path.Combine(AppContext.BaseDirectory, "Content");
         IsMouseVisible = true;
 
         _graphics.HardwareModeSwitch = false;

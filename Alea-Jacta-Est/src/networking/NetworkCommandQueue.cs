@@ -27,6 +27,13 @@ public class NetworkCommandQueue : ICommandQueue
 
     public void Enqueue(IGameCommand command)
     {
+        // Local-only commands always execute locally, even on clients.
+        if (command is ReturnToMenuCommand)
+        {
+            _local.Enqueue(command);
+            return;
+        }
+
         if (!IsClient)
         {
             // Host or single-player: execute locally.

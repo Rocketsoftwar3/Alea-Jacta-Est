@@ -1,3 +1,37 @@
-Alea-Jacta-Est/bin/*
-Alea-Jacta-Est/obj/Debug/*
-/CLAUDE.md
+# Build outputs
+**/bin/
+**/obj/
+publish-final/
+publish-full/
+
+# Content pipeline build cache
+Alea-Jacta-Est/Content/bin/
+Alea-Jacta-Est/Content/obj/
+
+# IDE / user settings
+.idea/
+.vs/
+*.suo
+*.user
+*.DotSettings.user
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Archives
+*.zip
+
+# Rapport qualité (LaTeX)
+rapport_qualite.aux
+rapport_qualite.log
+rapport_qualite.out
+rapport_qualite.toc
+rapport_qualite.pdf
+
+# Word docs
+*.docx
+
+# Misc
+build_log.txt
+imgui.ini
